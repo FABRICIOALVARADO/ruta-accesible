@@ -41,7 +41,7 @@ function savedRoutes(state) {
 }
 const reportTag=status=>'<span class="tag '+(status==='Resuelto'?'green':status==='En revisión'?'neutral':'gold')+'">'+esc(status)+'</span>';
 export function community(state) {
-  const reportList=state.reports.filter(report=>state.user?.role!=='admin'||report.author===state.user.name);
+  const reportList=state.reports.filter(report=>report.user_id===state.user?.id);
   return wrap(heading('Comunidad','Comparte problemas de accesibilidad y sigue el estado de tus reportes.','Participación ciudadana')+'<div class="grid two"><section class="community-callout"><h2>Reportar una barrera</h2><p>Indica dónde está el problema y qué encontraste para que pueda revisarse.</p>'+button('Nuevo reporte','report','lime','plus')+'</section><section class="panel"><h3>Cómo funciona</h3><ol class="steps"><li>Describe el lugar y el problema.</li><li>El equipo revisa los detalles que enviaste.</li><li>Consulta aquí si se resolvió o sigue en revisión.</li></ol></section></div><section><div class="section-head"><h2>Mis reportes</h2></div>'+(state.user?'<div class="panel">'+(reportList.length?reportList.map(r=>'<div class="record"><div><strong>'+esc(r.title)+'</strong><p>'+esc(r.place_name||'Sin lugar asociado')+' · '+esc(r.type)+' · '+dateLabel(r.created_at)+'</p></div>'+reportTag(r.status)+'</div>').join(''):'<p>Aún no has enviado reportes.</p>')+'</div>':loginCard())+'</section>');
 }
 export function account(state) {

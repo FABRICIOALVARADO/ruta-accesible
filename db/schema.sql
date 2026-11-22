@@ -1,5 +1,8 @@
 PRAGMA foreign_keys = ON;
 PRAGMA journal_mode = WAL;
+CREATE TABLE IF NOT EXISTS app_metadata (
+ key TEXT PRIMARY KEY, value TEXT NOT NULL
+);
 CREATE TABLE IF NOT EXISTS users (
  id INTEGER PRIMARY KEY, name TEXT NOT NULL CHECK(length(name) BETWEEN 2 AND 80),
  email TEXT NOT NULL UNIQUE COLLATE NOCASE, password_hash TEXT NOT NULL,

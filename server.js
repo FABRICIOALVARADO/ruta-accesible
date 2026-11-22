@@ -13,7 +13,17 @@ class ApiError extends Error { constructor(status,message){super(message);this.s
 function text(value,min=1,max=1000){if(typeof value!=='string'||value.trim().length<min||value.trim().length>max) throw new ApiError(400,`Completa los campos con entre ${min} y ${max} caracteres.`);return value.trim();}
 function choice(value,list){if(!list.includes(value))throw new ApiError(400,'Selecciona una opción válida.');return value;}
 function number(value,min,max){if(typeof value!=='number'||!Number.isFinite(value)||value<min||value>max)throw new ApiError(400,'Número fuera del rango permitido.');return value;}
-async function body(req){let data='';for await(const part of req){data+=part;if(Buffer.byteLength(data)>20_000)throw new ApiError(413,'Solicitud demasiado grande.');}try{return JSON.parse(data||'{}');}catch{throw new ApiError(400,'JSON inválido.');}}
+async function body(req) {
+ let raw='';
+ for await(const part of req) {
+  raw+=part;
+  if(Buffer.byteLength(raw)>20_000)throw new ApiError(413,'Solicitud demasiado grande.');
+ }
+ let data;
+ try {data=JSON.parse(raw||'{}');} catch {throw new ApiError(400,'JSON inválido.');}
+ if(!data||typeof data!=='object'||Array.isArray(data))throw new ApiError(400,'Envía un objeto JSON.');
+ return data;
+}
 const placeSelect=`SELECT p.*, COALESCE((SELECT ROUND(AVG(rating),1) FROM reviews WHERE place_id=p.id),0) AS rating, (SELECT COUNT(*) FROM reviews WHERE place_id=p.id) AS review_count FROM places p`;
 
 export function createApp({db=openDatabase(),mapsKey=process.env.GOOGLE_MAPS_API_KEY||''}={}) {
@@ -73,7 +83,9 @@ export function createApp({db=openDatabase(),mapsKey=process.env.GOOGLE_MAPS_API
    const file=resolve(root,'.'+decodeURIComponent(path==='/'?'/index.html':path));if(!file.startsWith(root.endsWith(sep)?root:root+sep))throw new ApiError(403,'Acceso no permitido.');
    const info=await stat(file).catch(()=>null);if(!info?.isFile())throw new ApiError(404,'Archivo no encontrado.');
    const mime={'.html':'text/html','.css':'text/css','.js':'text/javascript','.svg':'image/svg+xml','.png':'image/png','.webmanifest':'application/manifest+json'}[extname(file)]||'application/octet-stream';
-   res.writeHead(200,{'Content-Type':mime+'; charset=utf-8','Cache-Control':'no-cache'});res.end(method==='HEAD'?undefined:await readFile(file));
+   const contents=method==='HEAD'?undefined:await readFile(file);
+   res.writeHead(200,{'Content-Type':mime+'; charset=utf-8','Cache-Control':'no-cache'});
+   res.end(contents);
   } catch(error) { if(!error.status)console.error(error);json(error.status||500,{error:error.status?error.message:'Ocurrió un error. Inténtalo nuevamente.'}); }
  });
  return {server,db};

@@ -2,6 +2,7 @@ import { esc, icon } from './ui.js';
 const center = {lat:-12.067,lng:-75.208};
 const bounds = {north:-12.025,south:-12.101,west:-75.248,east:-75.175};
 let loader;
+let rejectedKey=false;
 const project = point => ({
   x: (point.lng-bounds.west)/(bounds.east-bounds.west)*100,
   y: (bounds.north-point.lat)/(bounds.north-bounds.south)*100
@@ -17,6 +18,7 @@ function loadGoogle(key) {
     const timeout = setTimeout(() => fail('Google Maps no respondió.','network'),12000);
     function fail(message,reason) { clearTimeout(timeout); reject(Object.assign(new Error(message),{reason})); }
     window.gm_authFailure = () => {
+      rejectedKey=true;
       fail('Google Maps rechazó la clave.','auth');
       window.dispatchEvent(new Event('ruta-maps-auth'));
     };
@@ -80,7 +82,11 @@ export function createMap(config,places,selectPlace) {
   schematic();
   const ready = config.mapsKey ? loadGoogle(config.mapsKey).then(async maps => {
     const [{Map},{AdvancedMarkerElement}] = await Promise.all([maps.importLibrary('maps'),maps.importLibrary('marker')]);
-    if (!current() || googleFrame.dataset.disabled) return null;
+    if (!current()) return null;
+    if (rejectedKey) {
+      onAuthFailure();
+      return null;
+    }
     googleFrame.hidden=false;
     fallback.hidden=true;
     const map = new Map(googleFrame,{center,zoom:13,mapId:config.mapId||'DEMO_MAP_ID',mapTypeControl:false,streetViewControl:false,fullscreenControl:true,gestureHandling:'cooperative'});
@@ -92,19 +98,19 @@ export function createMap(config,places,selectPlace) {
   }).catch(() => {fallbackMode('Google Maps no está disponible. Se muestra el plano esquemático.');return null;}) : Promise.resolve(null);
   return {
     setPlaces(list){state.all=list;updateMarkers();},
-    select(id){state.selected=id;schematic();const place=state.all.find(p=>p.id===id);if(state.map&&place){state.map.panTo(place);state.map.setZoom(16);}},
+    select(id){state.selected=id;schematic();const place=state.all.find(p=>p.id===id);if(state.map&&place){state.map.panTo({lat:place.lat,lng:place.lng});state.map.setZoom(16);}},
     reset:overview,
     showEstimate(points){state.endpoints=points;schematic();},
     clearRoute(){state.endpoints=[];state.path=null;state.lines.forEach(line=>line.setMap(null));state.lines=[];schematic();overview();},
     async compute({origin,destination,travel_mode},isCurrent=()=>true) {
       const map=await ready;
-      if (!map || !isCurrent()) return null;
+      if (!map || !state.map || !isCurrent()) return null;
       const {Route}=await google.maps.importLibrary('routes');
       const {routes}=await Route.computeRoutes({
         origin,destination,travelMode:travel_mode,
         fields:['path','distanceMeters','durationMillis'],
       });
-      if (!routes?.length || !isCurrent() || !current()) return null;
+      if (!routes?.length || !state.map || !isCurrent() || !current()) return null;
       const route=routes[0];
       state.lines.forEach(line=>line.setMap(null));
       state.path=route.path;
