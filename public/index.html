@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="description" content="Encuentra lugares y planifica recorridos en Huancayo con información sobre accesibilidad.">
+<meta name="theme-color" content="#191746">
+<title>Ruta Accesible · Huancayo</title>
+<link rel="icon" href="/icon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/styles.css">
+<script type="module" src="/app.js"></script>
+</head>
+<body>
+<a class="skip" href="#contenido">Saltar al contenido</a>
+<header class="top"><div class="shell top-inner">
+  <a class="brand" href="#inicio"><img src="/icon.svg" alt="" width="40" height="40"><span>ruta<span class="brand-accent">accesible</span><small>HUANCAYO, PERÚ</small></span></a>
+  <button id="menu" class="button subtle menu-toggle" aria-controls="primary-nav" aria-expanded="false">Menú</button>
+  <nav id="primary-nav" aria-label="Navegación principal"><a href="#inicio">Inicio</a><a href="#explorar">Explorar</a><a href="#rutas">Rutas</a><a href="#comunidad">Comunidad</a><a id="admin-nav" href="#admin" hidden>Administrar</a></nav>
+  <div class="top-actions"><button class="icon-button preferences" data-action="preferences" title="Preferencias de lectura" aria-label="Preferencias de lectura">Aa</button><div id="account"></div></div>
+</div></header>
+<main id="contenido" tabindex="-1"><div class="shell loading">Cargando Ruta Accesible…</div></main>
+<footer><div class="shell footer-inner"><a class="brand" href="#inicio"><img src="/icon.svg" alt="" width="36" height="36"><span>ruta<span class="brand-accent">accesible</span><small>PROYECTO FINAL · PROGRAMACIÓN WEB</small></span></a><div><a href="#guia">Guía de accesibilidad</a><a href="#acerca">Sobre el proyecto</a><a href="https://github.com/FABRICIOALVARADO/ruta-accesible" target="_blank" rel="noopener noreferrer">GitHub ↗</a></div></div></footer>
+<dialog id="dialog"><div class="dialog-content"></div></dialog>
+<div id="toast" class="toast" role="status" aria-live="polite"></div>
+<noscript>Para usar los filtros, la planificación de rutas y tu cuenta, activa JavaScript.</noscript>
+</body>
+</html>
