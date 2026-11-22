@@ -11,7 +11,7 @@ CREATE TABLE IF NOT EXISTS sessions (
  expires_at INTEGER NOT NULL
 );
 CREATE TABLE IF NOT EXISTS places (
- id INTEGER PRIMARY KEY, name TEXT NOT NULL, category TEXT NOT NULL CHECK(category IN ('Cultura','Parques','Salud','Comercio','Gastronom�a','Servicios')),
+ id INTEGER PRIMARY KEY, name TEXT NOT NULL, category TEXT NOT NULL CHECK(category IN ('Cultura','Parques','Salud','Comercio','Gastronomía','Servicios')),
  district TEXT NOT NULL, address TEXT NOT NULL, description TEXT NOT NULL,
  lat REAL NOT NULL CHECK(lat BETWEEN -90 AND 90), lng REAL NOT NULL CHECK(lng BETWEEN -180 AND 180),
  image TEXT NOT NULL DEFAULT '', ramp INTEGER NOT NULL DEFAULT 0 CHECK(ramp IN (0,1)),
@@ -36,8 +36,8 @@ CREATE TABLE IF NOT EXISTS reports (
  id INTEGER PRIMARY KEY, user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
  place_id INTEGER REFERENCES places(id) ON DELETE SET NULL,
  title TEXT NOT NULL, description TEXT NOT NULL,
- type TEXT NOT NULL CHECK(type IN ('Rampa bloqueada','Vereda da�ada','Sin acceso','Informaci�n incorrecta','Otro')),
- status TEXT NOT NULL DEFAULT 'Pendiente' CHECK(status IN ('Pendiente','En revisi�n','Resuelto')),
+ type TEXT NOT NULL CHECK(type IN ('Rampa bloqueada','Vereda dañada','Sin acceso','Información incorrecta','Otro')),
+ status TEXT NOT NULL DEFAULT 'Pendiente' CHECK(status IN ('Pendiente','En revisión','Resuelto')),
  created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now'))
 );
 CREATE TABLE IF NOT EXISTS saved_routes (
