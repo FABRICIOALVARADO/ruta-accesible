@@ -1,0 +1,118 @@
+<div class="container-xl page map-page">
+  <header class="map-header">
+    <div><p class="kicker mb-2">HUANCAYO · MAPA DE MOVILIDAD</p><h1>Planifica tu recorrido</h1>
+      <p>Compara trayectos y revisa las condiciones de cada cuadra antes de salir.</p></div>
+    <a class="btn btn-soft" routerLink="/recorridos">Ver recorridos publicados →</a>
+  </header>
+  <div class="map-layout">
+    <aside class="route-console surface" aria-label="Planificador del mapa">
+      <form class="vstack gap-3" [formGroup]="form" (ngSubmit)="search()">
+        <div class="route-fields">
+          <div class="point-symbol origin-symbol" aria-hidden="true"></div>
+          <div><label class="form-label" for="map-origin">Origen</label><input class="form-control" id="map-origin" list="map-places" formControlName="origin" placeholder="Busca un lugar o marca el punto" maxlength="160"></div>
+          <div class="point-symbol destination-symbol" aria-hidden="true"></div>
+          <div><label class="form-label" for="map-destination">Destino</label><input class="form-control" id="map-destination" list="map-places" formControlName="destination" placeholder="Busca un destino" maxlength="160"></div>
+          <datalist id="map-places">@for (point of points();track point.name) {<option [value]="point.name"></option>}</datalist>
+        </div>
+        <div class="map-action-row">
+          <button class="btn btn-soft btn-sm" type="button" (click)="locate()">Usar mi ubicación</button>
+          <button class="btn btn-soft btn-sm" type="button" (click)="swap()">Invertir</button>
+          <button class="btn btn-outline-secondary btn-sm" type="button" (click)="picking.set('origin')">Marcar origen</button>
+          <button class="btn btn-outline-secondary btn-sm" type="button" (click)="picking.set('destination')">Marcar destino</button>
+        </div>
+        <details class="profile-box">
+          <summary>Preferencias de movilidad</summary>
+          <ra-profile-fields class="d-block mt-2" [value]="profile()" (update)="updateProfile($event)" />
+          <a class="d-inline-block small fw-semibold mt-3" routerLink="/preferencias">Configurar preferencias guardadas →</a>
+        </details>
+        <button class="btn btn-brand" type="submit" [disabled]="loading() || busy()">{{busy() ? 'Comparando…' : 'Comparar recorridos'}}</button>
+      </form>
+      @if (error()) {<p class="alert alert-danger small mt-3 mb-0" role="alert">{{error()}}</p>}
+      @if (comparison(); as result) {
+        <div class="route-results mt-3" aria-live="polite">
+          @if (result.reason==='outside') {<p class="alert alert-warning small mb-2">Estos puntos están fuera de la red registrada. Puedes consultar las indicaciones peatonales en Google Maps.</p>}
+          @else if (result.reason==='same') {<p class="alert alert-warning small mb-2">Ambos puntos están cerca del mismo cruce. Prueba con un destino más alejado.</p>}
+          @else if (result.reason==='disconnected') {<p class="alert alert-warning small mb-2">Los tramos registrados no conectan los puntos. Revisa los avisos del mapa.</p>}
+          @if (result.direct || result.alternative) {
+            <h2 class="h6 mb-2">Opciones de recorrido</h2>
+            @if (result.alternative; as alternative) {
+              <button type="button" class="route-option" [class.is-selected]="choice()==='alternative'" [attr.aria-pressed]="choice()==='alternative'" (click)="choose('alternative')">
+                <span><strong>Menos barreras registradas</strong><small>{{title(alternative)}} · {{alternative.segments.length}} tramos</small></span><strong>{{meters(alternative.meters)}}</strong>
+              </button>
+            } @else {<p class="small muted mb-2">No hay un recorrido que cumpla tus preferencias en esta red.</p>}
+            @if (result.direct; as direct) {
+              <button type="button" class="route-option mt-2" [class.is-selected]="choice()==='direct'" [attr.aria-pressed]="choice()==='direct'" (click)="choose('direct')">
+                <span><strong>Más corto en la red</strong><small>{{title(direct)}} · {{direct.barrier_count}} tramos con avisos o barreras</small></span><strong>{{meters(direct.meters)}}</strong>
+              </button>
+            }
+            @if (result.snap && (result.snap.origin_m>=10 || result.snap.destination_m>=10)) {
+              <p class="coverage-note mt-2">La red comienza a {{result.snap.origin_m}} m del origen y termina a {{result.snap.destination_m}} m del destino. Esos enlaces quedan fuera de la revisión.</p>
+            }
+          }
+        </div>
+      } @else {
+        <button class="btn btn-soft w-100 mt-3" type="button" [disabled]="loading()" (click)="demo()">Probar Plaza Constitución → Huamanmarca</button>
+        <p class="coverage-note mt-2 mb-0">Ejemplo de cálculo con tramos y condiciones simulados.</p>
+      }
+      @if (google()) {<a class="d-inline-block mt-3 small fw-semibold" [href]="google()" target="_blank" rel="noopener noreferrer">Abrir indicaciones peatonales en Google Maps ↗</a>}
+    </aside>
+    <section class="map-column" aria-label="Mapa y detalle del recorrido">
+      <div class="surface map-frame">
+        <div class="map-toolbar">
+          <div class="legend-row" aria-label="Leyenda del mapa"><span><i class="legend-line active-line"></i>Elegido</span><span><i class="legend-line reference-line"></i>Referencia</span><span><i class="legend-dot"></i>Barrera</span></div>
+          <div class="map-action-row">
+            <button class="btn btn-soft btn-sm" type="button" (click)="refresh()">Actualizar mapa</button>
+            <button class="btn btn-soft btn-sm" type="button" [attr.aria-pressed]="picking()==='report'" (click)="picking.set(picking()==='report'?null:'report')">Marcar barrera</button>
+          </div>
+        </div>
+        @if (picking(); as pick) {
+          <div class="map-selection" role="status"><span>Toca el mapa para marcar {{pick==='origin'?'el origen':pick==='destination'?'el destino':'la barrera'}}.</span>
+            <button type="button" class="btn btn-sm btn-outline-secondary" (click)="picking.set(null)">Cancelar</button></div>
+        }
+        <ra-live-map [network]="network()" [route]="active()" [other]="other()" [origin]="origin()" [destination]="destination()"
+          [report]="report()" [picking]="!!picking()" [focus]="focused()"
+          (pick)="selectOnMap($event)" (selectStreet)="showStreet($event)" (selectBarrier)="showBarrier($event)" />
+        @if (report(); as location) {
+          <div class="map-selection"><span>Punto seleccionado · {{location.lat.toFixed(5)}}, {{location.lng.toFixed(5)}}</span>
+            <div class="d-flex gap-2 flex-wrap"><button class="btn btn-brand btn-sm" type="button" (click)="submitReport()">Continuar reporte</button>
+              <button class="btn btn-outline-secondary btn-sm" type="button" (click)="report.set(null)">Quitar punto</button></div></div>
+        }
+      </div>
+      @if (barrier(); as event) {
+        <div class="surface p-3 mt-3" aria-live="polite">
+          <div class="d-flex flex-wrap gap-2 align-items-center"><strong>{{event.title}}</strong><span class="tag tag-warn">{{event.map_effect==='closed'?'Tramo cerrado':'Advertencia'}}</span></div>
+          <p class="mb-0 mt-1 muted small">{{event.segment_name || 'Punto fuera de la red'}} @if (event.reviewed_at) { · Revisado el {{date(event.reviewed_at)}}}</p>
+        </div>
+      }
+      @if (focused(); as street) {
+        <section class="surface p-3 mt-3" aria-live="polite" aria-label="Detalle del tramo">
+          <div class="d-flex justify-content-between align-items-start flex-wrap gap-2"><h2 class="h5 mb-0">{{street.name}}</h2>
+            <span class="tag" [class.tag-green]="street.quality==='verified'">{{street.closed ? 'Cerrado' : quality[street.quality]}}</span>
+          </div>
+          <dl class="measurements mb-0 mt-3">
+            <div><dt>Cruce</dt><dd>{{crossings[street.crossing]}}</dd></div>
+            <div><dt>Superficie</dt><dd>{{surfaces[street.surface]}}</dd></div>
+            <div><dt>Pendiente</dt><dd>{{street.slope_percent === null ? 'Sin medir' : street.slope_percent + ' %'}}</dd></div>
+            <div><dt>Ancho</dt><dd>{{street.width_cm === null ? 'Sin medir' : street.width_cm + ' cm'}}</dd></div>
+          </dl>
+          <p class="muted small mb-0 mt-2">{{street.notes}} @if (street.checked_at) { · Revisado el {{date(street.checked_at)}}}</p>
+        </section>
+      }
+      @if (active(); as route) {
+        <section class="surface detail-panel mt-3" aria-label="Pasos del recorrido">
+          <div class="d-flex justify-content-between gap-2 flex-wrap align-items-center mb-2"><h2 class="h5 mb-0">Cuadra por cuadra</h2>
+            <span class="tag" [class.tag-green]="route.unverified_count===0" [class.tag-warn]="route.demonstration">{{title(route)}}</span></div>
+          <ol class="route-steps mb-0">
+            @for (step of route.segments;track step.id) {
+              <li><button type="button" [attr.aria-pressed]="focused()?.id===step.id" (click)="showStreet(step)">
+                <span><strong>{{step.name}}</strong><small>{{crossings[step.crossing]}} · {{quality[step.quality]}}</small>
+                  @if(step.issues.length){<small class="route-issue">{{step.issues.join(' · ')}}</small>}</span>
+                <span>{{meters(step.meters)}}</span>
+              </button></li>
+            }
+          </ol>
+        </section>
+      }
+    </section>
+  </div>
+</div>

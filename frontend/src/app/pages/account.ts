@@ -48,7 +48,7 @@ export class Account {
       this.form.reset();
       this.notice.show(this.creating() ? 'Cuenta creada.' : 'Sesión iniciada.');
       const target=this.route.snapshot.queryParamMap.get('volver');
-      if (target && /^\/(explorar|lugares\/\d+|rutas|comunidad|administrar)(?:[?#]|$)/.test(target)) await this.router.navigateByUrl(target);
+      if (target && /^\/(explorar|lugares\/\d+|rutas|mapa|recorridos|preferencias|comunidad|administrar|verificacion)(?:[?#]|$)/.test(target)) await this.router.navigateByUrl(target);
       else await this.refresh();
     });
   }

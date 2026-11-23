@@ -16,7 +16,7 @@
             "browser": "src/main.ts",
             "tsConfig": "tsconfig.json",
             "assets": [{ "glob": "**/*", "input": "static" }],
-            "styles": ["node_modules/bootstrap/dist/css/bootstrap.min.css", "src/styles.css"],
+            "styles": ["node_modules/bootstrap/dist/css/bootstrap.min.css", "node_modules/leaflet/dist/leaflet.css", "src/styles.css", "src/mobility.css"],
             "optimization": { "scripts": true, "styles": true, "fonts": false },
             "outputHashing": "all"
           }
