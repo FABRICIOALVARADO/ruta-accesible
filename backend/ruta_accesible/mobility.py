@@ -104,7 +104,7 @@ def compare_routes(payload: CompareInput, db: Database):
     real = [item for item in network_segments if item.quality != "demo"]
     pilot = [item for item in network_segments if item.quality == "demo"]
     response = {"direct": None, "alternative": None, "reason": "outside", "snap": None}
-    for subset in (real, pilot):
+    for subset in (pilot,) if payload.demonstration else (real, pilot):
         connected = {node for item in subset for node in (item.start, item.end)}
         coverage = {node: nodes[node] for node in connected}
         start, end = nearest_node(origin, coverage), nearest_node(destination, coverage)
@@ -146,7 +146,7 @@ def access(place_id: int, db: Database):
         "SELECT a.steps,a.door_cm,a.toilet,a.entrance,a.photo_url,a.notes,a.verified,a.checked_at "
         "FROM place_access a JOIN places p ON p.id=a.place_id WHERE p.id=? AND p.archived_at IS NULL", (place_id,),
     ).fetchone()
-    return dict(row) if row else None
+    return dict(row) | {"verified": bool(row["verified"])} if row else None
 
 
 @router.get("/preferences")

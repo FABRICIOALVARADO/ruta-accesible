@@ -43,6 +43,8 @@ export class NavigatorPage {
   readonly barrier=signal<Barrier|null>(null);
   readonly loading=signal(true);
   readonly busy=signal(false);
+  readonly saved=signal(false);
+  readonly saving=signal(false);
   readonly error=signal('');
   readonly google=signal('');
   readonly meters=metersLabel;
@@ -51,6 +53,7 @@ export class NavigatorPage {
   readonly crossings=crossingLabels;
   readonly surfaces=surfaceLabels;
   private generation=0;
+  private useDemo=false;
   readonly points=computed(()=>{
     const unique=new Map<string,{name:string;lat:number;lng:number}>();
     for(const item of this.places()) unique.set(fold(item.name),item);
@@ -62,8 +65,13 @@ export class NavigatorPage {
     const origin=this.query.snapshot.queryParamMap.get('origen') ?? '';
     const destination=this.query.snapshot.queryParamMap.get('destino') ?? '';
     const verified=this.query.snapshot.queryParamMap.get('verificada')==='1';
+    this.useDemo=this.query.snapshot.queryParamMap.get('demo')==='1';
+    if(this.query.snapshot.queryParamMap.get('marcar')==='barrera')this.picking.set('report');
     this.form.reset({origin,destination});
-    this.form.valueChanges.pipe(takeUntilDestroyed(inject(DestroyRef))).subscribe(()=>this.invalidate());
+    this.form.valueChanges.pipe(takeUntilDestroyed(inject(DestroyRef))).subscribe(()=>{
+      this.useDemo=false;
+      this.invalidate();
+    });
     Promise.all([this.mobility.network(),this.api.places(),this.session.ready()]).then(async ([graph,places])=>{
       this.network.set(graph);
       this.places.set(places);
@@ -92,6 +100,7 @@ export class NavigatorPage {
     this.focused.set(null);
     this.google.set('');
     this.busy.set(false);
+    this.saved.set(false);
   }
 
   updateProfile(value:Profile) { this.profile.set(value); this.invalidate(); }
@@ -99,6 +108,7 @@ export class NavigatorPage {
   demo() {
     this.profile.set({...defaultProfile});
     this.form.setValue({origin:'Plaza Constitución',destination:'Plaza de Huamanmarca'});
+    this.useDemo=true;
     void this.search();
   }
 
@@ -149,7 +159,7 @@ export class NavigatorPage {
     this.focused.set(null);
     this.google.set(mapsLink(a.lat+','+a.lng,b.lat+','+b.lng));
     try {
-      const result=await this.mobility.compare(a,b,this.profile());
+      const result=await this.mobility.compare(a,b,this.profile(),this.useDemo);
       if(revision!==this.generation) return;
       this.comparison.set(result);
       this.choice.set(result.alternative ? 'alternative' : 'direct');
@@ -159,6 +169,19 @@ export class NavigatorPage {
   }
 
   choose(choice:Choice) { this.choice.set(choice); this.focused.set(null); this.barrier.set(null); }
+
+  async save(){
+    if(!this.active() || !this.session.requireLogin())return;
+    const {origin,destination}=this.form.getRawValue();
+    const revision=this.generation;
+    this.saving.set(true);
+    try{
+      await this.api.saveTrip({name:('Recorrido a '+destination).slice(0,120),origin,destination,mode_id:'walking'});
+      if(revision===this.generation)this.saved.set(true);
+      this.notice.show('Recorrido guardado en tu cuenta.');
+    }catch(error){this.error.set(errorText(error));}
+    finally{this.saving.set(false);}
+  }
 
   title(route:Candidate) {
     if(route.demonstration) return 'Datos de demostración';

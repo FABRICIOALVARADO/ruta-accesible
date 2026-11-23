@@ -62,8 +62,8 @@ export const toiletLabels = {yes:'Adaptado',no:'Sin baño adaptado',unknown:'Sin
 export class MobilityApi {
   private http=inject(HttpClient);
   network() { return this.get<Network>('/map/network'); }
-  compare(origin:Point,destination:Point,preferences:Profile) {
-    return this.send<Comparison>('POST','/map/compare',{origin,destination,preferences});
+  compare(origin:Point,destination:Point,preferences:Profile,demonstration=false) {
+    return this.send<Comparison>('POST','/map/compare',{origin,destination,preferences,demonstration});
   }
   walks() { return this.get<Walk[]>('/map/walks'); }
   entrance(place:number) { return this.get<Inspection|null>('/map/places/'+place+'/access'); }

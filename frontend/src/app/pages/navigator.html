@@ -48,6 +48,9 @@
             @if (result.snap && (result.snap.origin_m>=10 || result.snap.destination_m>=10)) {
               <p class="coverage-note mt-2">La red comienza a {{result.snap.origin_m}} m del origen y termina a {{result.snap.destination_m}} m del destino. Esos enlaces quedan fuera de la revisión.</p>
             }
+            @if(active()){
+              <button class="btn btn-soft btn-sm w-100 mt-2" type="button" [disabled]="saving() || saved()" (click)="save()">{{saved()?'Recorrido guardado':'Guardar en mis recorridos'}}</button>
+            }
           }
         </div>
       } @else {
@@ -84,6 +87,16 @@
           <p class="mb-0 mt-1 muted small">{{event.segment_name || 'Punto fuera de la red'}} @if (event.reviewed_at) { · Revisado el {{date(event.reviewed_at)}}}</p>
         </div>
       }
+    @if ((network()?.barriers?.length ?? 0) > 0) {
+      <details class="surface p-3 mt-3">
+        <summary class="fw-semibold">Avisos activos en el mapa ({{network()?.barriers?.length}})</summary>
+        <ul class="list-unstyled mb-0 mt-2">
+          @for (item of network()?.barriers ?? [];track item.report_id) {
+            <li><button type="button" class="btn btn-link text-start px-0" (click)="showBarrier(item)">{{item.title}} · {{item.map_effect==='closed'?'Tramo cerrado':'Advertencia'}}</button></li>
+          }
+        </ul>
+      </details>
+    }
       @if (focused(); as street) {
         <section class="surface p-3 mt-3" aria-live="polite" aria-label="Detalle del tramo">
           <div class="d-flex justify-content-between align-items-start flex-wrap gap-2"><h2 class="h5 mb-0">{{street.name}}</h2>
@@ -92,6 +105,7 @@
           <dl class="measurements mb-0 mt-3">
             <div><dt>Cruce</dt><dd>{{crossings[street.crossing]}}</dd></div>
             <div><dt>Superficie</dt><dd>{{surfaces[street.surface]}}</dd></div>
+            <div><dt>Escalones</dt><dd>{{street.stairs===null?'Sin revisar':street.stairs?'Sí':'No'}}</dd></div>
             <div><dt>Pendiente</dt><dd>{{street.slope_percent === null ? 'Sin medir' : street.slope_percent + ' %'}}</dd></div>
             <div><dt>Ancho</dt><dd>{{street.width_cm === null ? 'Sin medir' : street.width_cm + ' cm'}}</dd></div>
           </dl>

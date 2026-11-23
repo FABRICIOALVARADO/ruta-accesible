@@ -4,16 +4,22 @@ import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { Api, errorText } from '../core/api';
 import { dateLabel, facilities, mapsLink } from '../core/format';
+import { MobilityApi, crossingLabels, toiletLabels, type Inspection } from '../core/mobility';
 import type { Detail, Place } from '../core/models';
 import { Notice, Session } from '../core/session';
 
 @Component({imports:[ReactiveFormsModule,RouterLink],templateUrl:'./detail.html'})
 export class PlaceDetail {
   private api=inject(Api);
+  private mobility=inject(MobilityApi);
   private router=inject(ActivatedRoute);
   private notice=inject(Notice);
   readonly session=inject(Session);
   readonly info=signal<Detail | null>(null);
+  readonly entrance=signal<Inspection|null>(null);
+  readonly crossings=crossingLabels;
+  readonly toilets=toiletLabels;
+  readonly pictureFailed=signal(false);
   readonly pending=signal(true);
   readonly busy=signal(false);
   readonly error=signal('');
@@ -27,6 +33,8 @@ export class PlaceDetail {
   constructor() {
     this.router.paramMap.pipe(takeUntilDestroyed(inject(DestroyRef))).subscribe(params => {
       this.info.set(null);
+      this.entrance.set(null);
+      this.pictureFailed.set(false);
       this.pending.set(true);
       this.error.set('');
       const id=Number(params.get('id'));
@@ -38,9 +46,10 @@ export class PlaceDetail {
   private async load(id: number) {
     const revision=++this.revision;
     try {
-      const result=await this.api.detail(id);
+      const [result,entrance]=await Promise.all([this.api.detail(id),this.mobility.entrance(id).catch(()=>null)]);
       if (revision!==this.revision) return;
       this.info.set(result);
+      this.entrance.set(entrance);
       const mine=result.reviews.find(item=>item.mine);
       this.form.reset({rating:mine?.rating ?? 5,comment:mine?.comment ?? ''});
     } catch (error) { if (revision===this.revision) this.error.set(errorText(error)); }

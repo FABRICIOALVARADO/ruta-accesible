@@ -30,6 +30,7 @@ class CompareInput(Input):
     origin: MapPoint
     destination: MapPoint
     preferences: PreferenceInput = Field(default_factory=PreferenceInput)
+    demonstration: bool = False
 
 
 class JunctionInput(MapPoint):

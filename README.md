@@ -1,6 +1,6 @@
 # Ruta Accesible
 
-Directorio de lugares de Huancayo, El Tambo y Chilca. Permite consultar rampas, baños adaptados y otras facilidades de acceso, planificar recorridos y reportar barreras. Las fichas iniciales incluyen datos de demostración que requieren verificación en campo.
+Mapa y directorio de Huancayo, El Tambo y Chilca. Permite comparar recorridos según las barreras registradas, consultar las condiciones de cada cuadra y reportar obstáculos con su ubicación.
 
 ## Empezar en Windows
 
@@ -25,7 +25,15 @@ Copia `.env.example` a `.env` en la raíz. Reinicia después de ajustar las vari
 | `GOOGLE_MAPS_API_KEY` | Habilita el mapa de calles y el cálculo de rutas desde la web. Activa **Maps JavaScript API** y **Routes API** y restringe la clave al origen local en Google Cloud. |
 | `GOOGLE_MAPS_MAP_ID` | Identificador de mapa de Google. El valor de prueba es `DEMO_MAP_ID`. |
 
-Sin clave, el directorio conserva el plano esquemático. El planificador muestra una distancia en línea recta cuando conoce ambos puntos y ofrece un enlace a las indicaciones de Google Maps.
+El mapa principal usa Leaflet y calles de OpenStreetMap con su atribución. Con conexión a Internet se carga el fondo de calles. El cálculo en la red propia funciona desde SQLite, incluso si ese fondo falla. La vista de indicaciones de Google Maps se puede abrir desde el mapa y el planificador activa su integración interna si hay una clave configurada.
+
+## Usar el mapa
+
+En **Mapa**, selecciona un origen y destino del directorio o márcalos sobre el mapa. La primera opción prioriza las preferencias de movilidad y la segunda muestra el camino más corto dentro de la red registrada. Los botones de **Cuadra por cuadra** muestran accesos, medidas y avisos.
+
+**Probar Plaza Constitución → Huamanmarca** carga una red de demostración. Sus condiciones son simuladas. Los recorridos reales cubren solo los tramos incorporados y revisados en campo. El estado de cada tramo indica cuánto se conoce de él. El mapa informa cuando un punto queda fuera de cobertura.
+
+Un reporte marcado en el mapa aparece en **Administración → Verificación de campo**. Desde ahí se puede publicar una advertencia o cerrar el tramo asociado. El cierre se aplica al cálculo hasta que se retira o se resuelve el reporte. En el mismo panel se pueden registrar puntos, medir tramos y entradas, y publicar recorridos que conecten tramos verificados.
 
 ## Estructura
 
@@ -41,7 +49,9 @@ Angular usa TypeScript, plantillas HTML, CSS y Bootstrap. Se compila a JavaScrip
 
 ### Base de datos
 
-`backend/ruta_accesible/schema.sql` define el esquema. Los distritos, categorías, facilidades, tipos y estados de reporte y modos de transporte viven en catálogos. `place_facilities` relaciona lugares con sus facilidades y `favorites` relaciona usuarios con lugares. La calificación se calcula desde las reseñas. El estado vigente de cada reporte se obtiene de su último movimiento en `report_events`. Así se evita duplicar etiquetas, promedios y estados.
+`backend/ruta_accesible/schema.sql` define el directorio y la actividad de usuarios. `mobility_schema.sql` agrega puntos, tramos, revisiones de campo, ubicación de reportes y preferencias. Cada tramo conecta dos puntos. Sus mediciones se guardan por revisión, y el cálculo usa la última. Las barreras activas se obtienen del último movimiento de cada reporte en `report_events`.
+
+FastAPI calcula ambos recorridos con Dijkstra. Para la alternativa descarta cierres y condiciones incompatibles con los filtros, y penaliza los avisos activos y la información incompleta. El resultado diferencia tramos verificados, sin revisar y de demostración. El cálculo usa la longitud de los segmentos registrados y avisa si el origen o destino quedan separados de la red.
 
 El archivo `data/ruta-accesible-fastapi.db` se inicializa en el primer arranque. Si existe `data/ruta-accesible.db` de la edición anterior, se importan los registros una vez y se conserva el archivo de origen. La migración mantiene usuarios, lugares, reseñas, favoritos, reportes y recorridos guardados. Las sesiones se vuelven a iniciar en la edición nueva.
 

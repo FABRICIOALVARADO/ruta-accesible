@@ -19,6 +19,8 @@
 .route-option strong:last-child { white-space:nowrap; }
 .route-option span strong:last-child { white-space:normal; }
 .route-option.is-selected { background:var(--map-tint); border-color:#a891e7; color:#33216d; box-shadow:inset 3px 0 var(--map-accent); }
+.route-option { transition:background-color 150ms ease,border-color 150ms ease,box-shadow 150ms ease; }
+.route-option:hover { border-color:#a891e7; }
 .coverage-note { font-size:.78rem; color:var(--muted); }
 .map-column { min-width:0; }
 .map-toolbar,.map-selection { display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:.55rem; padding:.75rem .9rem; }
@@ -51,3 +53,4 @@
 .admin-fieldset legend { float:none; width:auto; font-size:.92rem; font-weight:700; padding:0 .35rem; margin:0; }
 @media(max-width:991px){.map-layout { grid-template-columns:minmax(0,1fr); }.live-map { height:clamp(320px,52vh,560px); }}
 @media(max-width:575px){.measurements { grid-template-columns:repeat(2,minmax(0,1fr)); }.map-toolbar { padding:.55rem .7rem; }.route-console {padding:.95rem;}}
+@media(prefers-reduced-motion:reduce){.route-option{transition:none;}}

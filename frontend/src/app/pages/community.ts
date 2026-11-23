@@ -2,8 +2,8 @@ import { Component, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { Api, errorText } from '../core/api';
-import { dateLabel, nameFor } from '../core/format';
-import type { BarrierReport, Config, Place, ReportEvent } from '../core/models';
+import { coordinates, dateLabel, nameFor } from '../core/format';
+import type { BarrierReport, Config, Place, Point, ReportEvent } from '../core/models';
 import { Notice, Session } from '../core/session';
 
 @Component({imports:[ReactiveFormsModule,RouterLink],templateUrl:'./community.html'})
@@ -20,6 +20,7 @@ export class Community {
   readonly loadingHistory=signal(false);
   readonly busy=signal(false);
   readonly error=signal('');
+  readonly marked=signal<Point|null>(null);
   readonly date=dateLabel;
   readonly form=inject(FormBuilder).nonNullable.group({
     place_id:0,location:['',Validators.maxLength(200)],type_id:['',Validators.required],
@@ -28,6 +29,13 @@ export class Community {
   });
 
   constructor() {
+    const params=this.route.snapshot.queryParamMap;
+    const lat=params.get('lat'), lng=params.get('lng');
+    const marked=lat!==null && lng!==null ? coordinates(lat+', '+lng) : undefined;
+    if(marked) {
+      this.marked.set(marked);
+      this.form.controls.location.setValue('Punto marcado en el mapa');
+    }
     Promise.all([this.api.config(),this.api.places(),this.session.ready()]).then(async ([config,places])=>{
       this.config.set(config);
       this.places.set(places);
@@ -50,8 +58,10 @@ export class Community {
     this.busy.set(true);
     this.error.set('');
     try {
-      await this.api.report({title,description,type_id,place_id:place_id||null,location:location.trim()||null});
+      const point=this.marked();
+      await this.api.report({title,description,type_id,place_id:place_id||null,location:location.trim()||null,...(point??{})});
       this.form.reset();
+      this.marked.set(null);
       await this.refresh();
       this.notice.show('Reporte enviado.');
     } catch(error) { this.error.set(errorText(error)); }
@@ -71,6 +81,14 @@ export class Community {
   }
 
   status(id:string) { return nameFor(this.config()?.catalogs.report_statuses,id); }
+  returnPath() {
+    const query=new URLSearchParams();
+    const point=this.marked();
+    const place=this.route.snapshot.queryParamMap.get('lugar');
+    if(place)query.set('lugar',place);
+    if(point){query.set('lat',String(point.lat));query.set('lng',String(point.lng));}
+    return '/comunidad'+(query.size?'?'+query.toString():'');
+  }
   type(id:string) { return nameFor(this.config()?.catalogs.report_types,id); }
 
   private async refresh() { if (this.session.user()) this.reports.set(await this.api.myReports()); }

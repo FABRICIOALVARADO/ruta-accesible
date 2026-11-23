@@ -22,7 +22,7 @@ import { MobilityApi, type Walk } from '../core/mobility';
             <h2 class="h4">{{walk.name}}</h2><p>{{walk.description}}</p>
             <p class="muted small">{{walk.origin.name}} → {{walk.destination.name}}</p>
             @if(walk.route) {
-              <a class="btn btn-brand" routerLink="/mapa" [queryParams]="{origen:walk.origin.name,destino:walk.destination.name,verificada:walk.state==='verified'?1:null}">Abrir recorrido en el mapa</a>
+              <a class="btn btn-brand" routerLink="/mapa" [queryParams]="{origen:walk.origin.lat+','+walk.origin.lng,destino:walk.destination.lat+','+walk.destination.lng,verificada:walk.state==='verified'?1:null,demo:walk.state==='demo'?1:null}">Abrir recorrido en el mapa</a>
             } @else {<p class="small muted mb-0">No hay un paso que cumpla la revisión en este momento.</p>}
           </div></article>
         }

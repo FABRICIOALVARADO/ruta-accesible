@@ -1,0 +1,164 @@
+<div class="container-xl page">
+  <header class="page-title"><div class="kicker">GESTIÓN DEL MAPA</div><h1>Verificación de campo</h1>
+    <p>Registra mediciones, revisa barreras y publica recorridos con cobertura verificada.</p></header>
+  @if(error()){<p class="alert alert-danger" role="alert">{{error()}}</p>}
+  @if(loading()){<p class="muted" role="status">Cargando verificación…</p>}
+  @else if(session.user()?.role!=='admin'){
+    <section class="surface p-4"><p>Este panel requiere una cuenta administradora.</p>
+      <a class="btn btn-brand" routerLink="/cuenta" [queryParams]="{volver:'/verificacion'}">Ir a mi cuenta</a>
+    </section>
+  } @else {
+    <nav class="d-flex flex-wrap gap-2 mb-3" aria-label="Secciones de verificación">
+      @for(item of sections;track item.id){
+        <button type="button" class="btn" [class.btn-brand]="section()===item.id" [class.btn-soft]="section()!==item.id"
+          [attr.aria-pressed]="section()===item.id" (click)="section.set(item.id)">{{item.name}}</button>
+      }
+    </nav>
+    @switch(section()){
+      @case('survey'){
+        <div class="row g-3">
+          <section class="col-lg-6"><div class="surface p-4">
+            <h2 class="h4 mb-3">Revisar un tramo</h2>
+            <label for="inspect-street" class="form-label">Tramo registrado</label>
+            <select id="inspect-street" class="form-select mb-3" [ngModel]="selectedStreet" (ngModelChange)="selectStreet($event)">
+              <option [ngValue]="0">Selecciona un tramo</option>
+              @for(street of network()?.segments ?? [];track street.id){<option [ngValue]="street.id">{{street.name}} · {{quality[street.quality]}}</option>}
+            </select>
+            @if(selectedStreet){
+              <form class="row g-3" #survey="ngForm" (ngSubmit)="saveCheck()">
+                <label class="col-sm-4 form-label mb-0">Escalones
+                  <select class="form-select mt-1" name="stairs" [(ngModel)]="check.stairs"><option [ngValue]="null">Sin revisar</option><option [ngValue]="false">No</option><option [ngValue]="true">Sí</option></select>
+                </label>
+                <label class="col-sm-4 form-label mb-0">Cruce
+                  <select class="form-select mt-1" name="crossing" [(ngModel)]="check.crossing">@for(item of crossingOptions;track item[0]){<option [value]="item[0]">{{item[1]}}</option>}</select>
+                </label>
+                <label class="col-sm-4 form-label mb-0">Superficie
+                  <select class="form-select mt-1" name="surface" [(ngModel)]="check.surface">@for(item of surfaceOptions;track item[0]){<option [value]="item[0]">{{item[1]}}</option>}</select>
+                </label>
+                <label class="col-sm-6 form-label mb-0">Pendiente (%)
+                  <input class="form-control mt-1" type="number" min="0" max="100" step="0.1" name="slope" [(ngModel)]="check.slope_percent">
+                </label>
+                <label class="col-sm-6 form-label mb-0">Ancho útil (cm)
+                  <input class="form-control mt-1" type="number" min="20" max="1000" step="1" name="width" [(ngModel)]="check.width_cm">
+                </label>
+                <label class="col-12 form-label mb-0">Observación
+                  <textarea class="form-control mt-1" name="notes" rows="2" maxlength="500" [(ngModel)]="check.notes"></textarea>
+                </label>
+                <div class="col-12">
+                  <label class="mobility-check mb-1"><input type="checkbox" class="form-check-input" name="verified" [(ngModel)]="check.verified"> Revisado en campo</label>
+                  <p class="muted small mb-0">Para verificar un tramo real, completa las cinco condiciones de acceso.</p>
+                </div>
+                <div class="col-12"><button type="submit" class="btn btn-brand" [disabled]="survey.invalid || busy()">Guardar revisión</button></div>
+              </form>
+            } @else {<p class="muted small mb-0">Elige un tramo para registrar sus condiciones.</p>}
+          </div></section>
+          <section class="col-lg-6"><div class="surface p-4">
+            <h2 class="h4 mb-3">Ampliar la red</h2>
+            <form #point="ngForm" (ngSubmit)="addJunction()" class="vstack gap-2">
+              <fieldset class="admin-fieldset vstack gap-2"><legend>Nuevo punto</legend>
+                <label class="form-label mb-0">Nombre del punto
+                  <input class="form-control mt-1" name="name" required minlength="3" maxlength="120" [(ngModel)]="junction.name">
+                </label>
+                <label class="form-label mb-0">Latitud, longitud
+                  <input class="form-control mt-1" name="coordinates" required placeholder="-12.0683, -75.2103" [(ngModel)]="junction.coordinates">
+                </label>
+                <button type="submit" class="btn btn-soft align-self-start" [disabled]="point.invalid || busy()">Registrar punto</button>
+              </fieldset>
+            </form>
+            <form #edge="ngForm" (ngSubmit)="addSegment()" class="mt-3">
+              <fieldset class="admin-fieldset vstack gap-2"><legend>Conectar dos puntos</legend>
+                <label class="form-label mb-0">Nombre del tramo
+                  <input class="form-control mt-1" name="name" required minlength="3" maxlength="120" [(ngModel)]="segment.name">
+                </label>
+                <div class="row g-2">
+                  <label class="col-sm-6 form-label mb-0">Inicio
+                    <select class="form-select mt-1" name="start" [(ngModel)]="segment.start_id"><option [ngValue]="0">Elige un punto</option>@for(node of network()?.junctions ?? [];track node.id){<option [ngValue]="node.id">{{node.name}}</option>}</select>
+                  </label>
+                  <label class="col-sm-6 form-label mb-0">Final
+                    <select class="form-select mt-1" name="end" [(ngModel)]="segment.end_id"><option [ngValue]="0">Elige un punto</option>@for(node of network()?.junctions ?? [];track node.id){<option [ngValue]="node.id">{{node.name}}</option>}</select>
+                  </label>
+                </div>
+                <button type="submit" class="btn btn-soft align-self-start" [disabled]="edge.invalid || busy() || !segment.start_id || !segment.end_id || segment.start_id===segment.end_id">Registrar tramo</button>
+              </fieldset>
+            </form>
+          </div></section>
+        </div>
+      }
+      @case('entrance'){
+        <section class="surface p-4">
+          <h2 class="h4">Revisar la entrada a un lugar</h2>
+          <label class="form-label" for="inspect-place">Lugar</label>
+          <select id="inspect-place" class="form-select mb-3" [ngModel]="selectedPlace" (ngModelChange)="selectPlace($event)">
+            <option [ngValue]="0">Selecciona un lugar</option>
+            @for(place of places();track place.id){<option [ngValue]="place.id">{{place.name}}</option>}
+          </select>
+          @if(selectedPlace){
+            <form class="row g-3" #placeForm="ngForm" (ngSubmit)="saveEntrance()">
+              <label class="col-sm-6 col-lg-3 form-label mb-0">Tipo de acceso
+                <select class="form-select mt-1" name="entrance" [(ngModel)]="entrance.entrance">@for(item of crossingOptions;track item[0]){<option [value]="item[0]">{{item[1]}}</option>}</select>
+              </label>
+              <label class="col-sm-6 col-lg-3 form-label mb-0">Escalones
+                <input class="form-control mt-1" type="number" min="0" max="99" step="1" name="steps" [(ngModel)]="entrance.steps">
+              </label>
+              <label class="col-sm-6 col-lg-3 form-label mb-0">Ancho de puerta (cm)
+                <input class="form-control mt-1" type="number" min="20" max="1000" step="1" name="door" [(ngModel)]="entrance.door_cm">
+              </label>
+              <label class="col-sm-6 col-lg-3 form-label mb-0">Baño adaptado
+                <select class="form-select mt-1" name="toilet" [(ngModel)]="entrance.toilet"><option value="unknown">Sin confirmar</option><option value="yes">Sí</option><option value="no">No</option></select>
+              </label>
+              <label class="col-12 form-label mb-0">Foto de la entrada (enlace HTTPS)
+                <input type="url" maxlength="500" class="form-control mt-1" name="photo" [(ngModel)]="entrance.photo_url" placeholder="https://…">
+              </label>
+              <label class="col-12 form-label mb-0">Observación
+                <textarea class="form-control mt-1" name="notes" rows="2" maxlength="500" [(ngModel)]="entrance.notes"></textarea>
+              </label>
+              <label class="col-12 mobility-check"><input type="checkbox" class="form-check-input" name="verified" [(ngModel)]="entrance.verified"> Entrada revisada en campo</label>
+              <div class="col-12"><button class="btn btn-brand" type="submit" [disabled]="placeForm.invalid || busy()">Guardar entrada</button></div>
+            </form>
+          }
+        </section>
+      }
+      @case('reports'){
+        <section class="surface p-4">
+          <h2 class="h4">Reportes con ubicación</h2>
+          @for(report of reports();track report.report_id){
+            <article class="record">
+              <div class="d-flex flex-wrap gap-2 align-items-center"><strong>{{report.title}}</strong><span class="tag">{{statuses[report.status_id]}}</span><span class="tag">{{effects[report.map_effect]}}</span></div>
+              <p class="muted small mb-2">{{report.segment_name || 'Fuera de los tramos registrados'}} · {{report.lat.toFixed(5)}}, {{report.lng.toFixed(5)}}</p>
+              @if(report.status_id!=='resolved'){
+                <div class="d-flex flex-wrap gap-2">
+                  <button type="button" class="btn btn-soft btn-sm" [disabled]="busy() || report.map_effect==='warning'" (click)="review(report,'warning')">Publicar aviso</button>
+                  @if(report.segment_id){<button type="button" class="btn btn-outline-danger btn-sm" [disabled]="busy() || report.map_effect==='closed'" (click)="review(report,'closed')">Cerrar tramo</button>}
+                  @if(report.map_effect!=='hidden'){<button type="button" class="btn btn-outline-secondary btn-sm" [disabled]="busy()" (click)="review(report,'hidden')">Ocultar</button>}
+                  @if(report.status_id==='reviewing'){<button type="button" class="btn btn-outline-secondary btn-sm" [disabled]="busy()" (click)="resolve(report)">Marcar resuelto</button>}
+                </div>
+              }
+            </article>
+          } @empty {<p class="muted mb-0">Cuando alguien marque una barrera en el mapa, podrás revisarla aquí.</p>}
+        </section>
+      }
+      @case('publish'){
+        <section class="surface p-4">
+          <h2 class="h4">Publicar un recorrido verificado</h2>
+          <p class="muted">La red debe conectar ambos puntos por tramos revisados, sin cierres ni escalones.</p>
+          <form class="row g-3" #walkForm="ngForm" (ngSubmit)="publish()">
+            <label class="col-12 form-label mb-0">Nombre
+              <input class="form-control mt-1" name="name" required minlength="3" maxlength="120" [(ngModel)]="walk.name">
+            </label>
+            <label class="col-sm-6 form-label mb-0">Origen
+              <select class="form-select mt-1" name="start" [(ngModel)]="walk.start_id"><option [ngValue]="0">Elige un punto</option>@for(node of network()?.junctions ?? [];track node.id){<option [ngValue]="node.id">{{node.name}}</option>}</select>
+            </label>
+            <label class="col-sm-6 form-label mb-0">Destino
+              <select class="form-select mt-1" name="end" [(ngModel)]="walk.end_id"><option [ngValue]="0">Elige un punto</option>@for(node of network()?.junctions ?? [];track node.id){<option [ngValue]="node.id">{{node.name}}</option>}</select>
+            </label>
+            <label class="col-12 form-label mb-0">Descripción
+              <textarea class="form-control mt-1" name="description" required minlength="8" maxlength="500" rows="2" [(ngModel)]="walk.description"></textarea>
+            </label>
+            <div class="col-12 d-flex flex-wrap gap-2"><button type="submit" class="btn btn-brand" [disabled]="walkForm.invalid || busy() || !walk.start_id || !walk.end_id || walk.start_id===walk.end_id">Publicar recorrido</button>
+              <a class="btn btn-soft" routerLink="/recorridos">Ver publicados</a></div>
+          </form>
+        </section>
+      }
+    }
+  }
+</div>

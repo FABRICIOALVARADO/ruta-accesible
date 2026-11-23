@@ -21,6 +21,7 @@ export interface Detail { place: Place; reviews: Review[]; }
 export type ReportStatus = 'pending' | 'reviewing' | 'resolved';
 export interface ReportInput {
   title: string; description: string; place_id: number | null; location: string | null; type_id: string;
+  lat?:number; lng?:number;
 }
 export interface BarrierReport extends ReportInput {
   id: number; status_id: ReportStatus; created_at: string; place_name: string | null; author: string;

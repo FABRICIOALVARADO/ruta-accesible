@@ -16,6 +16,7 @@ bootstrapApplication(App, {providers: [
     {path:'comunidad', title:'Comunidad · Ruta Accesible', loadComponent:() => import('./app/pages/community').then(m=>m.Community)},
     {path:'cuenta', title:'Mi cuenta · Ruta Accesible', loadComponent:() => import('./app/pages/account').then(m=>m.Account)},
     {path:'administrar', title:'Panel de gestión', loadComponent:() => import('./app/pages/admin').then(m=>m.AdminPage)},
+    {path:'verificacion', title:'Verificación de campo', loadComponent:() => import('./app/pages/verification').then(m=>m.VerificationPage)},
     {path:'**', redirectTo:''},
   ], withInMemoryScrolling({scrollPositionRestoration: 'enabled'})),
 ]}).catch(error => console.error('No se pudo iniciar Ruta Accesible.',error));
