@@ -45,11 +45,15 @@ class ReportInput(Input):
     type_id: CatalogId
     place_id: Annotated[int, Field(gt=0)] | None = None
     location: Address | None = None
+    lat: Annotated[float, Field(ge=-90, le=90, allow_inf_nan=False)] | None = None
+    lng: Annotated[float, Field(ge=-180, le=180, allow_inf_nan=False)] | None = None
 
     @model_validator(mode="after")
     def require_location(self):
         if self.place_id is None and self.location is None:
             raise ValueError("Selecciona un lugar o escribe una ubicación.")
+        if (self.lat is None) != (self.lng is None):
+            raise ValueError("Marca las dos coordenadas de la barrera.")
         return self
 
 

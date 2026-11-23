@@ -6,9 +6,11 @@ from pathlib import Path
 
 from .catalogs import CATALOGS, DEMO_PLACES
 from .config import Settings
+from .pilot_data import seed_pilot
 from .security import hash_password
 
 SCHEMA = Path(__file__).with_name("schema.sql")
+MOBILITY_SCHEMA = Path(__file__).with_name("mobility_schema.sql")
 
 
 def fold(value: str) -> str:
@@ -97,6 +99,7 @@ def initialize(settings: Settings) -> None:
     with closing(connect(path)) as db:
         db.execute("PRAGMA journal_mode = WAL")
         db.executescript(SCHEMA.read_text(encoding="utf-8"))
+        db.executescript(MOBILITY_SCHEMA.read_text(encoding="utf-8"))
         with db:
             db.execute("BEGIN IMMEDIATE")
             seed_catalogs(db)
@@ -108,6 +111,7 @@ def initialize(settings: Settings) -> None:
                     seed_places(db)
                     source = "demo"
                 db.execute("INSERT INTO metadata VALUES ('initialized', ?)", (source,))
+            seed_pilot(db)
             if settings.admin_email or settings.admin_password:
                 if not re.fullmatch(r"[^\s@]+@[^\s@]+\.[^\s@]+", settings.admin_email) or len(settings.admin_password) < 12:
                     raise ValueError("Configura ADMIN_EMAIL y ADMIN_PASSWORD (al menos 12 caracteres).")
