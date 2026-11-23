@@ -12,7 +12,8 @@ export default defineConfig({
   fullyParallel: false,
   workers: 1,
   reporter: 'list',
-  use: { baseURL, browserName: 'chromium', screenshot: 'only-on-failure', trace: 'retain-on-failure' },
+  use: { baseURL, browserName: 'chromium', channel: process.env.RUTA_TEST_BROWSER || undefined,
+    screenshot: 'only-on-failure', trace: 'retain-on-failure' },
   metadata: { data },
   globalTeardown: './e2e/limpiar.mjs',
   webServer: {
