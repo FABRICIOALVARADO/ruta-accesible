@@ -41,7 +41,7 @@ jobs:
   navegador:
     name: Flujo completo en Chromium
     needs: [api, frontend]
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v5
       - uses: actions/setup-python@v6
