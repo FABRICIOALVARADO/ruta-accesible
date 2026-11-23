@@ -1,0 +1,30 @@
+<a href="#contenido" class="skip">Saltar al contenido</a>
+<header class="site-header">
+  <div class="container-xl nav-shell">
+    <a class="brand" routerLink="/" (click)="menu.set(false)" aria-label="Ruta Accesible, inicio">
+      <img src="icon.svg" alt="" width="42" height="42"><span>ruta<span class="brand-accent">accesible</span><small>HUANCAYO, PERÚ</small></span>
+    </a>
+    <button class="btn btn-soft menu-toggle" type="button" [attr.aria-expanded]="menu()" aria-controls="navigation" (click)="toggleMenu()">Menú</button>
+    <nav id="navigation" [class.open]="menu()" aria-label="Navegación principal">
+      <a routerLink="/" routerLinkActive="active" [routerLinkActiveOptions]="{exact:true}" ariaCurrentWhenActive="page" (click)="menu.set(false)">Inicio</a>
+      <a routerLink="/explorar" routerLinkActive="active" ariaCurrentWhenActive="page" (click)="menu.set(false)">Explorar</a>
+      <a routerLink="/rutas" routerLinkActive="active" ariaCurrentWhenActive="page" (click)="menu.set(false)">Rutas</a>
+      <a routerLink="/comunidad" routerLinkActive="active" ariaCurrentWhenActive="page" (click)="menu.set(false)">Comunidad</a>
+      @if (session.user()?.role === 'admin') {
+        <a routerLink="/administrar" routerLinkActive="active" ariaCurrentWhenActive="page" (click)="menu.set(false)">Administrar</a>
+      }
+    </nav>
+    <div class="d-flex align-items-center gap-2">
+      <button class="btn btn-soft" type="button" aria-label="Texto ampliado y contraste alto" [attr.aria-pressed]="reading()" (click)="toggleReading()">Aa</button>
+      <a routerLink="/cuenta" class="btn btn-brand" (click)="menu.set(false)">{{session.user() ? 'Mi cuenta' : 'Entrar'}}</a>
+    </div>
+  </div>
+</header>
+<main id="contenido" tabindex="-1"><router-outlet /></main>
+<footer class="site-footer">
+  <div class="container-xl d-flex justify-content-between align-items-center flex-wrap gap-3">
+    <a class="brand" routerLink="/"><img src="icon.svg" alt="" width="32" height="32"><span>ruta<span class="brand-accent">accesible</span><small>HUANCAYO, JUNÍN</small></span></a>
+    <div class="d-flex gap-3 flex-wrap"><a routerLink="/explorar">Directorio</a><a routerLink="/comunidad">Comunidad</a><a href="https://github.com/FABRICIOALVARADO/ruta-accesible" target="_blank" rel="noopener noreferrer">GitHub ↗</a></div>
+  </div>
+</footer>
+<div class="notice-popup" role="status" aria-live="polite">{{notice.message()}}</div>

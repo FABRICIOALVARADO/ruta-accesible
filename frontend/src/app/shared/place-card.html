@@ -1,0 +1,24 @@
+<article class="place-card surface">
+  <div class="cover" [attr.data-kind]="place().image">
+    @if (photo(); as image) {
+      <img [src]="image.url" alt="" loading="lazy" [hidden]="photoFailed()" (error)="photoFailed.set(true)">
+      @if (!photoFailed()) {<a class="credit" [href]="image.source" target="_blank" rel="noopener noreferrer">Foto · {{image.credit}}</a>}
+    } @else {<span class="cover-icon" aria-hidden="true">⌖</span>}
+    <button type="button" class="btn favorite" [disabled]="busy()" [attr.aria-pressed]="saved()"
+      [attr.aria-label]="(saved() ? 'Quitar de favoritos: ' : 'Guardar en favoritos: ') + place().name" (click)="toggle()">{{saved() ? '♥' : '♡'}}</button>
+  </div>
+  <div class="place-copy">
+    <div class="eyebrow mb-2 d-flex gap-2 justify-content-between">
+      <span>{{place().category}} · {{place().district}}</span>
+      @if (place().rating !== null) {<span>★ {{place().rating}}</span>}
+    </div>
+    <h3 class="h5">{{place().name}}</h3>
+    <p class="muted small mb-2">{{place().address}}</p>
+    <div class="tag-list mb-3">
+      @for (id of place().facilities; track id) {<span class="tag">{{names[id]}}</span>}
+      @if (place().is_demo) {<span class="tag tag-warn">Datos de ejemplo</span>}
+      @else if (place().verified_at) {<span class="tag tag-green">Verificado</span>}
+    </div>
+    <a class="btn btn-soft btn-sm" [routerLink]="['/lugares',place().id]">Ver ficha →</a>
+  </div>
+</article>

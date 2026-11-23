@@ -1,0 +1,37 @@
+<div class="container-xl page">
+  <header class="page-title"><div class="kicker">COMUNIDAD</div><h1>Reporta una barrera</h1><p>Indica qué encontraste y sigue el estado de tu reporte.</p></header>
+  @if (error()) {<p class="alert alert-danger" role="alert">{{error()}}</p>}
+  <div class="row g-4">
+    <section class="col-lg-6"><div class="surface p-4">
+      <h2 class="h4 mb-3">Nuevo reporte</h2>
+      @if (session.loading()) {<p role="status" class="muted">Comprobando tu sesión…</p>}
+      @else if (session.user()) {
+        <form [formGroup]="form" (ngSubmit)="send()" class="vstack gap-3">
+          <div><label for="report-place" class="form-label">Lugar del directorio</label><select class="form-select" id="report-place" formControlName="place_id"><option [ngValue]="0">Otro lugar</option>@for (place of places(); track place.id) {<option [ngValue]="place.id">{{place.name}}</option>}</select></div>
+          <div><label for="report-location" class="form-label">Referencia {{form.controls.place_id.value ? '(opcional)' : '(obligatoria)'}}</label><input id="report-location" class="form-control" formControlName="location" maxlength="200" placeholder="Dirección o entrada del lugar"></div>
+          <div><label for="report-type" class="form-label">Tipo de barrera</label><select class="form-select" id="report-type" formControlName="type_id"><option value="">Elige una opción</option>@for (type of config()?.catalogs?.report_types ?? []; track type.id) {<option [value]="type.id">{{type.name}}</option>}</select></div>
+          <div><label for="report-title" class="form-label">Título</label><input id="report-title" class="form-control" formControlName="title" maxlength="120" placeholder="Ej. Rampa de ingreso bloqueada"></div>
+          <div><label for="report-desc" class="form-label">Descripción</label><textarea id="report-desc" class="form-control" formControlName="description" rows="4" maxlength="1500" placeholder="Describe qué pasó y dónde lo encontraste."></textarea></div>
+          <button type="submit" class="btn btn-brand align-self-start" [disabled]="busy()">Enviar reporte</button>
+        </form>
+      } @else {<p>Inicia sesión para enviar un reporte.</p><a class="btn btn-brand" routerLink="/cuenta" [queryParams]="{volver:'/comunidad'}">Iniciar sesión</a>}
+    </div></section>
+    <section class="col-lg-6"><div class="surface p-4">
+      <h2 class="h4">Seguimiento</h2>
+      @if (session.user()) {
+        @for (item of reports(); track item.id) {
+          <article class="record">
+            <div class="d-flex flex-wrap justify-content-between gap-2 mb-1"><h3 class="h6 mb-0">{{item.title}}</h3><span class="tag" [class.tag-green]="item.status_id==='resolved'">{{status(item.status_id)}}</span></div>
+            <small class="muted">{{item.place_name || item.location}} · {{type(item.type_id)}} · {{date(item.created_at)}}</small>
+            <p class="mb-2">{{item.description}}</p>
+            <button type="button" class="btn btn-soft btn-sm" [attr.aria-expanded]="open()===item.id" (click)="history(item.id)">Historial</button>
+            @if (open()===item.id) {
+              @if (loadingHistory()) {<p class="small muted mt-2" role="status">Cargando historial…</p>}
+              @else {<ol class="mt-2 mb-0 small">@for (event of events(); track $index) {<li>{{status(event.status_id)}} · {{date(event.changed_at)}}</li>}</ol>}
+            }
+          </article>
+        } @empty {<p class="muted mb-0">Aún no has enviado reportes.</p>}
+      } @else {<ol class="mb-0"><li>Describe la barrera y el lugar.</li><li>El equipo revisa el reporte.</li><li>Consulta los cambios de estado en esta página.</li></ol>}
+    </div></section>
+  </div>
+</div>
