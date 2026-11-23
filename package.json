@@ -1,6 +1,10 @@
 {
-  "name": "ruta-accesible", "version": "2.0.0", "private": true,
-  "description": "Explora Huancayo con información comunitaria de accesibilidad",
-  "type": "module", "engines": { "node": ">=24.0.0" },
-  "scripts": { "start": "node --env-file-if-exists=.env server.js", "dev": "node --watch --env-file-if-exists=.env server.js", "test": "node --test", "db:init": "node --env-file-if-exists=.env scripts/init-db.js" }
+  "name": "ruta-accesible",
+  "version": "3.0.0",
+  "private": true,
+  "scripts": {
+    "start": "python -m scripts.iniciar",
+    "build": "npm --prefix frontend run build",
+    "test": "python -m unittest discover -s backend/tests -v"
+  }
 }

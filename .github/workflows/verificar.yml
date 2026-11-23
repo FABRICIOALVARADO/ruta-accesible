@@ -37,3 +37,89 @@ jobs:
         with:
           name: angular-compilado
           path: frontend/dist/ruta-accesible/browser/
+
+  navegador:
+    name: Flujo completo en Chromium
+    needs: [api, frontend]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.13'
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '24'
+      - uses: actions/download-artifact@v4
+        with:
+          name: angular-compilado
+          path: frontend/dist/ruta-accesible/browser
+      - run: python -m pip install -r backend/requirements.txt
+      - run: npm install --no-audit --no-fund
+        working-directory: frontend
+      - run: npx playwright install --with-deps chromium
+        working-directory: frontend
+      - run: npm run test:e2e
+        working-directory: frontend
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: diagnostico-frontend
+          path: frontend/test-results/
+          if-no-files-found: ignore
+  windows:
+    name: Preparar y probar el paquete para Windows
+    needs: [api, frontend]
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.13'
+          architecture: x64
+      - uses: actions/download-artifact@v4
+        with:
+          name: angular-compilado
+          path: frontend/dist/ruta-accesible/browser
+      - name: Reunir la aplicación y las dependencias
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Path paquete/frontend/dist,paquete/data,paquete/paquetes-windows -Force | Out-Null
+          Copy-Item backend,scripts -Destination paquete -Recurse
+          Copy-Item frontend/dist/ruta-accesible -Destination paquete/frontend/dist -Recurse
+          Copy-Item iniciar.cmd,README.md,.env.example,.gitignore,package.json -Destination paquete
+          python -m pip download --only-binary=:all: --dest paquete/paquetes-windows -r backend/requirements.txt
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
+      - name: Verificar que el paquete levanta el servidor local
+        shell: pwsh
+        working-directory: paquete
+        run: |
+          python -m scripts.iniciar --solo-preparar
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
+          $rutaServer = Start-Process -FilePath '.venv/Scripts/python.exe' -ArgumentList '-m','uvicorn','backend.ruta_accesible.main:app','--host','127.0.0.1','--port','3001' -PassThru -WindowStyle Hidden
+          try {
+            $rutaReady = $false
+            for ($rutaTry = 0; $rutaTry -lt 30; $rutaTry++) {
+              try {
+                $rutaHealth = Invoke-RestMethod 'http://127.0.0.1:3001/api/health' -TimeoutSec 1
+                if ($rutaHealth.backend -eq 'FastAPI') { $rutaReady = $true; break }
+              } catch { Start-Sleep -Seconds 1 }
+            }
+            if (-not $rutaReady) { throw 'La API no inició' }
+            $rutaHome = Invoke-WebRequest 'http://127.0.0.1:3001/' -TimeoutSec 5
+            $rutaPlaces = Invoke-RestMethod 'http://127.0.0.1:3001/api/places' -TimeoutSec 5
+            if ($rutaHome.Content -notmatch '<ra-root' -or $rutaPlaces.Count -ne 9) { throw 'Angular o SQLite no cargaron' }
+            Write-Output 'La portada compilada y las nueve fichas están disponibles en Windows.'
+          } finally {
+            if (-not $rutaServer.HasExited) { Stop-Process -Id $rutaServer.Id }
+            $rutaServer.WaitForExit()
+          }
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Ruta-Accesible-Windows
+          include-hidden-files: true
+          path: |
+            paquete/
+            !paquete/.venv/**
+            !paquete/data/**
+            !paquete/**/__pycache__/**

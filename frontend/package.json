@@ -2,7 +2,11 @@
   "name": "ruta-accesible-web",
   "version": "3.0.0",
   "private": true,
-  "scripts": { "build": "ng build", "start": "ng serve --proxy-config proxy.conf.json" },
+  "scripts": {
+    "build": "ng build",
+    "start": "ng serve --proxy-config proxy.conf.json",
+    "test:e2e": "playwright test"
+  },
   "dependencies": {
     "@angular/common": "~22.2.0",
     "@angular/compiler": "~22.2.0",
@@ -18,7 +22,10 @@
     "@angular/build": "~22.2.0",
     "@angular/cli": "~22.2.0",
     "@angular/compiler-cli": "~22.2.0",
-    "typescript": "~6.0.0"
+    "typescript": "~6.0.0",
+    "@playwright/test": "1.56.1"
   },
-  "engines": { "node": "^22.22.3 || ^24.15.0 || ^26.0.0" }
+  "engines": {
+    "node": "^22.22.3 || ^24.15.0 || ^26.0.0"
+  }
 }
