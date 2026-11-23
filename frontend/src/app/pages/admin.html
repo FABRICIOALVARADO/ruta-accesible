@@ -13,6 +13,7 @@
       <button type="button" class="btn" [class.btn-brand]="page()==='places'" [class.btn-soft]="page()!=='places'" [attr.aria-pressed]="page()==='places'" (click)="page.set('places')">Lugares</button>
       <button type="button" class="btn" [class.btn-brand]="page()==='reports'" [class.btn-soft]="page()!=='reports'" [attr.aria-pressed]="page()==='reports'" (click)="page.set('reports')">Reportes</button>
       <a href="/api/admin/places.csv" class="btn btn-outline-secondary">Exportar directorio CSV</a>
+      <a class="btn btn-soft" routerLink="/verificacion">Verificación de campo →</a>
     </div>
     @if (page()==='places') {
       @if (editing()) {

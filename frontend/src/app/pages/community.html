@@ -4,6 +4,11 @@
   <div class="row g-4">
     <section class="col-lg-6"><div class="surface p-4">
       <h2 class="h4 mb-3">Nuevo reporte</h2>
+      @if(marked(); as point) {
+        <p class="alert alert-info small">Ubicación en el mapa: {{point.lat.toFixed(5)}}, {{point.lng.toFixed(5)}}. Si se aprueba el aviso, se mostrará su título y este punto.</p>
+      } @else {
+        <p class="small"><a routerLink="/mapa" [queryParams]="{marcar:'barrera'}">Marcar la barrera en el mapa →</a></p>
+      }
       @if (session.loading()) {<p role="status" class="muted">Comprobando tu sesión…</p>}
       @else if (session.user()) {
         <form [formGroup]="form" (ngSubmit)="send()" class="vstack gap-3">
@@ -14,7 +19,7 @@
           <div><label for="report-desc" class="form-label">Descripción</label><textarea id="report-desc" class="form-control" formControlName="description" rows="4" maxlength="1500" placeholder="Describe qué pasó y dónde lo encontraste."></textarea></div>
           <button type="submit" class="btn btn-brand align-self-start" [disabled]="busy()">Enviar reporte</button>
         </form>
-      } @else {<p>Inicia sesión para enviar un reporte.</p><a class="btn btn-brand" routerLink="/cuenta" [queryParams]="{volver:'/comunidad'}">Iniciar sesión</a>}
+      } @else {<p>Inicia sesión para enviar un reporte.</p><a class="btn btn-brand" routerLink="/cuenta" [queryParams]="{volver:returnPath()}">Iniciar sesión</a>}
     </div></section>
     <section class="col-lg-6"><div class="surface p-4">
       <h2 class="h4">Seguimiento</h2>

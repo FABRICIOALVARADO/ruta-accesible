@@ -8,7 +8,8 @@
     <nav id="navigation" [class.open]="menu()" aria-label="Navegación principal">
       <a routerLink="/" routerLinkActive="active" [routerLinkActiveOptions]="{exact:true}" ariaCurrentWhenActive="page" (click)="menu.set(false)">Inicio</a>
       <a routerLink="/explorar" routerLinkActive="active" ariaCurrentWhenActive="page" (click)="menu.set(false)">Explorar</a>
-      <a routerLink="/rutas" routerLinkActive="active" ariaCurrentWhenActive="page" (click)="menu.set(false)">Rutas</a>
+      <a routerLink="/mapa" routerLinkActive="active" ariaCurrentWhenActive="page" (click)="menu.set(false)">Mapa</a>
+      <a routerLink="/recorridos" routerLinkActive="active" ariaCurrentWhenActive="page" (click)="menu.set(false)">Recorridos</a>
       <a routerLink="/comunidad" routerLinkActive="active" ariaCurrentWhenActive="page" (click)="menu.set(false)">Comunidad</a>
       @if (session.user()?.role === 'admin') {
         <a routerLink="/administrar" routerLinkActive="active" ariaCurrentWhenActive="page" (click)="menu.set(false)">Administrar</a>

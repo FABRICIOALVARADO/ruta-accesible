@@ -7,6 +7,7 @@ from fastapi.responses import FileResponse, HTMLResponse, JSONResponse
 from .auth import Attempts, router as auth
 from .config import Settings
 from .database import initialize
+from .mobility import admin as map_admin, router as map_routes
 from .routes import admin, personal, public
 
 
@@ -49,7 +50,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             response.headers["Cache-Control"] = "no-store"
         return response
 
-    for router in (auth, public, personal, admin):
+    for router in (auth, public, personal, admin, map_routes, map_admin):
         app.include_router(router, prefix="/api")
 
     @app.get("/{path:path}", include_in_schema=False)

@@ -6,6 +6,7 @@ from fastapi import APIRouter, HTTPException, Query, Request, Response
 
 from .catalogs import CATALOGS
 from .dependencies import Admin, Database, Member, OptionalUser
+from .mobility import attach_report
 from .models import PlaceInput, ReportInput, ReportStatusInput, ReviewInput, SavedRouteInput
 from .places import check_catalog, get_place, list_places, save_place
 
@@ -120,6 +121,8 @@ def create_report(payload: ReportInput, user: Member, db: Database):
             (user["id"], payload.place_id, payload.location, payload.type_id, payload.title, payload.description),
         ).lastrowid
         db.execute("INSERT INTO report_events(report_id, status_id, actor_id) VALUES (?, 'pending', ?)", (report_id, user["id"]))
+        if payload.lat is not None and payload.lng is not None:
+            attach_report(db, report_id, payload.lat, payload.lng)
     return dict(db.execute(REPORT_QUERY + " WHERE r.id=?", (report_id,)).fetchone())
 
 

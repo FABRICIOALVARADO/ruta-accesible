@@ -39,7 +39,7 @@ jobs:
           path: frontend/dist/ruta-accesible/browser/
 
   navegador:
-    name: Flujo completo en Chromium
+    name: Flujo completo en Chrome
     needs: [api, frontend]
     runs-on: ubuntu-24.04
     steps:
@@ -57,10 +57,10 @@ jobs:
       - run: python -m pip install -r backend/requirements.txt
       - run: npm install --no-audit --no-fund
         working-directory: frontend
-      - run: npx playwright install --with-deps chromium
-        working-directory: frontend
       - run: npm run test:e2e
         working-directory: frontend
+        env:
+          RUTA_TEST_BROWSER: chrome
       - uses: actions/upload-artifact@v4
         if: failure()
         with:

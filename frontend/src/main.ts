@@ -10,9 +10,13 @@ bootstrapApplication(App, {providers: [
     {path:'explorar', title:'Explorar · Ruta Accesible', loadComponent:() => import('./app/pages/explore').then(m=>m.Explore)},
     {path:'lugares/:id', title:'Ficha del lugar', loadComponent:() => import('./app/pages/detail').then(m=>m.PlaceDetail)},
     {path:'rutas', title:'Planificar · Ruta Accesible', loadComponent:() => import('./app/pages/planner').then(m=>m.Planner)},
+    {path:'mapa', title:'Mapa de movilidad · Ruta Accesible', loadComponent:() => import('./app/pages/navigator').then(m=>m.NavigatorPage)},
+    {path:'recorridos', title:'Recorridos publicados', loadComponent:() => import('./app/pages/walks').then(m=>m.WalksPage)},
+    {path:'preferencias', title:'Preferencias de movilidad', loadComponent:() => import('./app/pages/preferences').then(m=>m.PreferencesPage)},
     {path:'comunidad', title:'Comunidad · Ruta Accesible', loadComponent:() => import('./app/pages/community').then(m=>m.Community)},
     {path:'cuenta', title:'Mi cuenta · Ruta Accesible', loadComponent:() => import('./app/pages/account').then(m=>m.Account)},
     {path:'administrar', title:'Panel de gestión', loadComponent:() => import('./app/pages/admin').then(m=>m.AdminPage)},
+    {path:'verificacion', title:'Verificación de campo', loadComponent:() => import('./app/pages/verification').then(m=>m.VerificationPage)},
     {path:'**', redirectTo:''},
   ], withInMemoryScrolling({scrollPositionRestoration: 'enabled'})),
 ]}).catch(error => console.error('No se pudo iniciar Ruta Accesible.',error));

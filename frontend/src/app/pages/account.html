@@ -16,6 +16,7 @@
         <h2 class="h4">Actividad</h2><p class="muted">{{favorites().length}} lugares guardados</p>
         <div class="d-flex flex-wrap gap-2">
           <a class="btn btn-soft" routerLink="/rutas">Mis recorridos</a><a class="btn btn-soft" routerLink="/comunidad">Mis reportes</a>
+          <a class="btn btn-soft" routerLink="/preferencias">Preferencias de movilidad</a>
           @if (user.role==='admin') {<a class="btn btn-soft" routerLink="/administrar">Panel de gestión</a>}
           <button type="button" class="btn btn-outline-secondary" (click)="logout()" [disabled]="busy()">Cerrar sesión</button>
         </div>

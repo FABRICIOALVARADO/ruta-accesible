@@ -12,7 +12,7 @@ export class Home {
   readonly photoError = signal(false);
   readonly shortcuts = [
     {icon:'⌖', title:'Explora el directorio', text:'Filtra por distrito y facilidades.', path:'/explorar'},
-    {icon:'↝', title:'Planifica tu recorrido', text:'Elige origen, destino y transporte.', path:'/rutas'},
+    {icon:'↝', title:'Compara recorridos', text:'Consulta las barreras de cada tramo.', path:'/mapa'},
     {icon:'⚑', title:'Reporta una barrera', text:'Indica un problema de acceso.', path:'/comunidad'},
   ];
 

@@ -20,8 +20,26 @@
             <section class="col-sm-6"><div><strong>{{feature[1]}}</strong><br><small class="muted">{{data.place.facilities.includes(feature[0]) ? 'Indicada en la ficha' : 'Sin confirmar'}}</small></div></section>
           }
         </div>
+        <div class="border-top pt-3 mb-4">
+          <div class="d-flex gap-2 justify-content-between align-items-start flex-wrap"><h2 class="h4 mb-2">Entrada y medidas</h2>
+            @if(session.user()?.role==='admin'){<a class="small fw-semibold" routerLink="/verificacion" [queryParams]="{lugar:data.place.id}">Revisar entrada →</a>}
+          </div>
+          @if(entrance(); as entry) {
+            <span class="tag" [class.tag-green]="entry.verified">{{entry.verified ? 'Verificado en campo' : 'Pendiente de verificación'}}</span>
+            <dl class="measurements my-3">
+              <div><dt>Acceso</dt><dd>{{crossings[entry.entrance]}}</dd></div>
+              <div><dt>Escalones</dt><dd>{{entry.steps ?? 'Sin revisar'}}</dd></div>
+              <div><dt>Puerta</dt><dd>{{entry.door_cm === null ? 'Sin medir' : entry.door_cm + ' cm'}}</dd></div>
+              <div><dt>Baño</dt><dd>{{toilets[entry.toilet]}}</dd></div>
+            </dl>
+            @if(entry.notes){<p class="mb-1">{{entry.notes}}</p>}
+            <p class="muted small">Registro del {{date(entry.checked_at)}}.</p>
+            @if(entry.photo_url && !pictureFailed()) {<img class="entrance-photo" [src]="entry.photo_url" [alt]="'Entrada de '+data.place.name" loading="lazy" referrerpolicy="no-referrer" (error)="pictureFailed.set(true)">}
+          } @else {<p class="muted small mb-0">Aún no hay una revisión con medidas de la entrada.</p>}
+        </div>
         <div class="d-flex flex-wrap gap-2">
           <a class="btn btn-brand" routerLink="/rutas" [queryParams]="{destino:data.place.name}">Planificar recorrido</a>
+          <a class="btn btn-soft" routerLink="/mapa" [queryParams]="{destino:data.place.name}">Comparar accesos en el mapa</a>
           <button type="button" class="btn btn-soft" [disabled]="busy()" [attr.aria-pressed]="session.favorites().has(data.place.id)" (click)="favorite(data.place.id)">{{session.favorites().has(data.place.id) ? '♥ Guardado' : '♡ Guardar favorito'}}</button>
           <a class="btn btn-outline-secondary" routerLink="/comunidad" [queryParams]="{lugar:data.place.id}">Reportar</a>
           <a class="btn btn-outline-secondary" [href]="google(data.place)" target="_blank" rel="noopener noreferrer">Google Maps ↗</a>
