@@ -1,0 +1,28 @@
+<section class="surface map-frame">
+  <div class="d-flex justify-content-between align-items-center gap-2 p-3">
+    <h2 class="h5 mb-0">{{title()}}</h2><span class="tag">{{native() ? 'Google Maps' : 'Plano esquemático'}}</span>
+  </div>
+  <div class="map-house">
+    <div class="map-scheme" [hidden]="native()">
+      <svg viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
+        <defs><pattern id="blocks" width="9" height="9" patternUnits="userSpaceOnUse" patternTransform="rotate(-24)">
+          <rect x="1" y="1" width="7" height="7" rx=".9" fill="#d9d0ea"/>
+        </pattern></defs>
+        <rect width="100" height="100" fill="#f1edf7"/>
+        <path d="M0 9 26 1 58 12 80 38 98 83 78 100H14L3 78 13 53Z" fill="url(#blocks)"/>
+        <path d="M0 9C19 28 8 54 0 78" fill="none" stroke="#afccde" stroke-width="2.4"/>
+        <path d="M22 0C38 19 29 48 54 100M0 47C28 42 64 40 95 28M21 92 93 60" fill="none" stroke="#fff" stroke-width="1.9"/>
+        @if (line()) {<polyline [attr.points]="line()" fill="none" stroke="#6039a8" stroke-width="1" stroke-dasharray="2 2"/>}
+      </svg>
+      @for (pin of pins(); track pin.id) {
+        <a class="pin" [style.left.%]="pin.x" [style.top.%]="pin.y" [routerLink]="['/lugares', pin.id]" [title]="pin.name" [attr.aria-label]="pin.name">⌖</a>
+      }
+    </div>
+    <div #google class="google-map" [class.is-shown]="native()" aria-label="Mapa interactivo de Google"></div>
+  </div>
+  <p class="muted small mb-0 px-3 py-2">
+    @if (native()) {Consulta las facilidades de cada lugar en su ficha.}
+    @else if (unavailable()) {Google Maps no está disponible. Se muestran ubicaciones de referencia.}
+    @else {Ubicaciones de referencia. El plano no representa calles ni pendientes.}
+  </p>
+</section>

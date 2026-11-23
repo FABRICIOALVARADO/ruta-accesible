@@ -1,0 +1,30 @@
+<div class="container-xl page">
+  <header class="page-title"><div class="kicker">DIRECTORIO</div><h1>Explorar Huancayo</h1><p>Filtra lugares según las facilidades que necesitas.</p></header>
+  <div class="row g-4">
+    <section class="col-lg-7">
+      <form [formGroup]="filters" (ngSubmit)="search()" class="surface p-3 p-md-4 mb-3">
+        <label for="q" class="form-label">Buscar lugar</label><input id="q" class="form-control" formControlName="q" type="search" placeholder="Ej. Plaza Constitución" maxlength="120">
+        <div class="row g-2 mt-1">
+          <div class="col-6"><label for="filter-category" class="form-label">Categoría</label><select id="filter-category" class="form-select" formControlName="category"><option value="">Todas</option>@for (item of config()?.catalogs?.categories ?? []; track item.id) {<option [value]="item.id">{{item.name}}</option>}</select></div>
+          <div class="col-6"><label for="filter-district" class="form-label">Distrito</label><select id="filter-district" class="form-select" formControlName="district"><option value="">Todos</option>@for (item of config()?.catalogs?.districts ?? []; track item.id) {<option [value]="item.id">{{item.name}}</option>}</select></div>
+        </div>
+        <div class="tag-list mt-3">
+          @for (item of config()?.catalogs?.facilities ?? []; track item.id) {
+            <button type="button" class="btn btn-sm" [class.btn-brand]="tags().has(item.id)" [class.btn-soft]="!tags().has(item.id)" [attr.aria-pressed]="tags().has(item.id)" (click)="toggle(item.id)">{{item.name}}</button>
+          }
+        </div>
+        <div class="d-flex gap-2 justify-content-between flex-wrap align-items-center mt-3">
+          <label class="d-flex gap-2 align-items-center small"><input class="form-check-input mt-0" type="checkbox" formControlName="verified"> Solo lugares verificados</label>
+          <div class="d-flex gap-2"><button type="button" class="btn btn-soft btn-sm" (click)="near()">Cerca de mí</button><button type="button" class="btn btn-outline-secondary btn-sm" (click)="reset()">Limpiar</button></div>
+        </div>
+      </form>
+      <p class="muted small" role="status">{{loading() ? 'Buscando…' : places().length + ' lugares encontrados' + (position() ? ' · Ordenados por cercanía' : '')}}</p>
+      @if (error()) {<div class="alert alert-danger" role="alert">{{error()}} <button type="button" class="btn btn-light btn-sm ms-2" (click)="search()">Reintentar</button></div>}
+      <div class="row g-3">
+        @for (place of places(); track place.id) {<div class="col-sm-6"><ra-place-card [place]="place" /></div>}
+        @empty { @if (!loading() && !error()) {<p class="muted">No encontramos lugares con esos filtros.</p>} }
+      </div>
+    </section>
+    <aside class="col-lg-5"><ra-map-card class="map-sticky" [config]="config()" [places]="places()" /></aside>
+  </div>
+</div>

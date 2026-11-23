@@ -1,0 +1,50 @@
+<div class="container-xl page">
+  <a class="fw-semibold" routerLink="/explorar">← Volver al directorio</a>
+  @if (error()) {<p class="alert alert-danger mt-3" role="alert">{{error()}}</p>}
+  @if (pending()) {<p role="status" class="mt-3 muted">Cargando ficha…</p>}
+  @if (info(); as data) {
+    <header class="page-title mt-3">
+      <div class="kicker">{{data.place.category}} · {{data.place.district}}</div>
+      <h1>{{data.place.name}}</h1><p>⌖ {{data.place.address}}</p>
+    </header>
+    <div class="row g-4">
+      <section class="col-lg-7"><div class="surface p-4">
+        <div class="tag-list mb-3">
+          @if (data.place.is_demo) {<span class="tag tag-warn">Datos de ejemplo</span>}
+          @else if (data.place.verified_at) {<span class="tag tag-green">Verificada el {{date(data.place.verified_at)}}</span>}
+          @else {<span class="tag">Pendiente de verificación</span>}
+        </div>
+        <p>{{data.place.description}}</p><h2 class="h4 mt-4">Facilidades de acceso</h2>
+        <div class="row g-2 facility-grid mb-4">
+          @for (feature of keys; track feature[0]) {
+            <section class="col-sm-6"><div><strong>{{feature[1]}}</strong><br><small class="muted">{{data.place.facilities.includes(feature[0]) ? 'Indicada en la ficha' : 'Sin confirmar'}}</small></div></section>
+          }
+        </div>
+        <div class="d-flex flex-wrap gap-2">
+          <a class="btn btn-brand" routerLink="/rutas" [queryParams]="{destino:data.place.name}">Planificar recorrido</a>
+          <button type="button" class="btn btn-soft" [disabled]="busy()" [attr.aria-pressed]="session.favorites().has(data.place.id)" (click)="favorite(data.place.id)">{{session.favorites().has(data.place.id) ? '♥ Guardado' : '♡ Guardar favorito'}}</button>
+          <a class="btn btn-outline-secondary" routerLink="/comunidad" [queryParams]="{lugar:data.place.id}">Reportar</a>
+          <a class="btn btn-outline-secondary" [href]="google(data.place)" target="_blank" rel="noopener noreferrer">Google Maps ↗</a>
+        </div>
+      </div></section>
+      <section class="col-lg-5"><div class="surface p-4">
+        <h2 class="h4">Reseñas @if (data.place.rating !== null) {<span class="tag">★ {{data.place.rating}} / 5</span>}</h2>
+        @if (session.user()) {
+          <form [formGroup]="form" (ngSubmit)="save(data.place.id)" class="vstack gap-2 mb-3">
+            <label for="score" class="form-label mb-0">Valoración</label>
+            <select id="score" class="form-select" formControlName="rating">@for (n of [5,4,3,2,1]; track n) {<option [ngValue]="n">{{n}} de 5</option>}</select>
+            <label for="review" class="form-label mb-0">Tu experiencia</label>
+            <textarea id="review" class="form-control" formControlName="comment" rows="3" maxlength="1000"></textarea>
+            <div class="d-flex gap-2 flex-wrap">
+              <button class="btn btn-brand" type="submit" [disabled]="busy() || form.invalid">Guardar reseña</button>
+              @for (item of data.reviews; track item.id) {@if (item.mine) {<button class="btn btn-outline-secondary" type="button" [disabled]="busy()" (click)="remove(data.place.id)">Quitar mi reseña</button>}}
+            </div>
+          </form>
+        } @else {<p><a routerLink="/cuenta" [queryParams]="{volver:'/lugares/'+data.place.id}">Inicia sesión para dejar una reseña.</a></p>}
+        @for (item of data.reviews; track item.id) {
+          <article class="record"><strong>{{item.author}} <span class="tag">★ {{item.rating}}</span></strong><p class="mt-1 mb-1">{{item.comment}}</p><small class="muted">{{date(item.created_at)}}</small></article>
+        } @empty {<p class="muted mb-0">Todavía no hay reseñas de este lugar.</p>}
+      </div></section>
+    </div>
+  }
+</div>

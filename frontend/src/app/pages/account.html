@@ -1,0 +1,48 @@
+<div class="container-xl page">
+  @if (error()) {<p class="alert alert-danger" role="alert">{{error()}}</p>}
+  @if (session.loading()) {<p class="muted" role="status">Comprobando tu sesión…</p>}
+  @else if (session.user()) {
+    @let user = session.user()!;
+    <header class="page-title"><div class="kicker">MI CUENTA</div><h1>Hola, {{user.name}}</h1><p>Consulta tu actividad y administra tu perfil.</p></header>
+    <div class="row g-3 mb-4">
+      <div class="col-lg-6"><section class="surface p-4 h-100">
+        <h2 class="h4">Tu perfil</h2><p class="muted">{{user.email}}</p>
+        <form [formGroup]="profile" (ngSubmit)="saveProfile()" class="d-flex flex-wrap align-items-end gap-2">
+          <div class="flex-grow-1"><label for="profile-name" class="form-label">Nombre</label><input id="profile-name" class="form-control" formControlName="name" maxlength="80"></div>
+          <button type="submit" class="btn btn-brand" [disabled]="profile.invalid || busy()">Actualizar perfil</button>
+        </form>
+      </section></div>
+      <div class="col-lg-6"><section class="surface p-4 h-100">
+        <h2 class="h4">Actividad</h2><p class="muted">{{favorites().length}} lugares guardados</p>
+        <div class="d-flex flex-wrap gap-2">
+          <a class="btn btn-soft" routerLink="/rutas">Mis recorridos</a><a class="btn btn-soft" routerLink="/comunidad">Mis reportes</a>
+          @if (user.role==='admin') {<a class="btn btn-soft" routerLink="/administrar">Panel de gestión</a>}
+          <button type="button" class="btn btn-outline-secondary" (click)="logout()" [disabled]="busy()">Cerrar sesión</button>
+        </div>
+      </section></div>
+    </div>
+    <h2 class="h3 mb-3">Mis favoritos</h2>
+    <div class="row g-3">
+      @for (place of favorites(); track place.id) {<div class="col-md-6 col-lg-4"><ra-place-card [place]="place" /></div>}
+      @empty {<div class="col"><p class="surface p-4">Guarda un lugar desde el directorio para encontrarlo aquí.</p></div>}
+    </div>
+  } @else {
+    <section class="surface auth-card p-4 p-md-5">
+      <h1 class="h2 mb-3">{{creating() ? 'Crea tu cuenta' : 'Inicia sesión'}}</h1>
+      <p class="muted">Guarda lugares y recorridos y revisa tus reportes.</p>
+      <form [formGroup]="form" (ngSubmit)="login()" class="vstack gap-3" novalidate>
+        @if (creating()) {
+          <div><label class="form-label" for="name">Nombre</label><input id="name" class="form-control" autocomplete="name" formControlName="name" maxlength="80" [class.is-invalid]="attempted() && form.controls.name.invalid"><div class="invalid-feedback">Escribe un nombre de al menos dos caracteres.</div></div>
+        }
+        <div><label class="form-label" for="email">Correo</label><input id="email" class="form-control" type="email" autocomplete="email" formControlName="email" maxlength="160" [class.is-invalid]="attempted() && form.controls.email.invalid"><div class="invalid-feedback">Indica un correo válido.</div></div>
+        <div><label class="form-label" for="password">Contraseña</label><div class="input-group">
+          <input id="password" class="form-control" [type]="visible() ? 'text' : 'password'" [attr.autocomplete]="creating() ? 'new-password' : 'current-password'" formControlName="password" maxlength="128" [class.is-invalid]="attempted() && form.controls.password.invalid">
+          <button class="btn btn-outline-secondary" type="button" (click)="togglePassword()">{{visible() ? 'Ocultar' : 'Mostrar'}}</button>
+          <div class="invalid-feedback">Escribe al menos ocho caracteres.</div>
+        </div></div>
+        <button type="submit" class="btn btn-brand" [disabled]="busy()">{{busy() ? 'Guardando…' : creating() ? 'Registrarme' : 'Entrar'}}</button>
+      </form>
+      <button type="button" class="btn btn-link px-0 mt-2" [disabled]="busy()" (click)="switchMode()">{{creating() ? 'Ya tengo una cuenta' : 'Crear una cuenta'}}</button>
+    </section>
+  }
+</div>

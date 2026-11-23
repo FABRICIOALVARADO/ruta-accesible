@@ -1,0 +1,73 @@
+<div class="container-xl page">
+  <header class="page-title"><div class="kicker">ADMINISTRACIÓN</div><h1>Panel de gestión</h1><p>Actualiza las fichas y da seguimiento a los reportes.</p></header>
+  @if (error()) {<p class="alert alert-danger" role="alert">{{error()}}</p>}
+  @if (loading()) {<p role="status" class="muted">Cargando administración…</p>}
+  @else if (session.user()?.role!=='admin') {<div class="surface p-4"><p>Inicia sesión con una cuenta administradora.</p><a class="btn btn-brand" routerLink="/cuenta" [queryParams]="{volver:'/administrar'}">Ir a mi cuenta</a></div>}
+  @else {
+    @if (totals(); as data) {
+      <div class="row row-cols-2 row-cols-sm-3 row-cols-lg-5 g-2 mb-4">@for (item of metrics; track item.key) {
+        <div class="col"><div class="surface stat"><strong>{{data[item.key]}}</strong><span class="muted">{{item.label}}</span></div></div>
+      }</div>
+    }
+    <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
+      <button type="button" class="btn" [class.btn-brand]="page()==='places'" [class.btn-soft]="page()!=='places'" [attr.aria-pressed]="page()==='places'" (click)="page.set('places')">Lugares</button>
+      <button type="button" class="btn" [class.btn-brand]="page()==='reports'" [class.btn-soft]="page()!=='reports'" [attr.aria-pressed]="page()==='reports'" (click)="page.set('reports')">Reportes</button>
+      <a href="/api/admin/places.csv" class="btn btn-outline-secondary">Exportar directorio CSV</a>
+    </div>
+    @if (page()==='places') {
+      @if (editing()) {
+        <section class="surface p-4 mb-3">
+          <h2 class="h4">{{placeId() ? 'Editar lugar' : 'Nuevo lugar'}}</h2>
+          <form class="row g-3" [formGroup]="form" (ngSubmit)="save()">
+            <div class="col-md-6"><label for="place-name" class="form-label">Nombre</label><input id="place-name" class="form-control" formControlName="name" maxlength="120"></div>
+            <div class="col-md-6"><label for="address" class="form-label">Dirección</label><input id="address" class="form-control" formControlName="address" maxlength="200"></div>
+            <div class="col-sm-6 col-lg-3"><label for="category" class="form-label">Categoría</label><select id="category" class="form-select" formControlName="category_id">@for(item of config()?.catalogs?.categories ?? [];track item.id){<option [value]="item.id">{{item.name}}</option>}</select></div>
+            <div class="col-sm-6 col-lg-3"><label for="district" class="form-label">Distrito</label><select id="district" class="form-select" formControlName="district_id">@for(item of config()?.catalogs?.districts ?? [];track item.id){<option [value]="item.id">{{item.name}}</option>}</select></div>
+            <div class="col-sm-6 col-lg-3"><label for="lat" class="form-label">Latitud</label><input id="lat" class="form-control" type="number" step="any" formControlName="lat"></div>
+            <div class="col-sm-6 col-lg-3"><label for="lng" class="form-label">Longitud</label><input id="lng" class="form-control" type="number" step="any" formControlName="lng"></div>
+            <div class="col-lg-8"><label for="description" class="form-label">Descripción</label><textarea id="description" rows="3" class="form-control" maxlength="1500" formControlName="description"></textarea></div>
+            <div class="col-lg-4"><label for="cover-kind" class="form-label">Estilo de tarjeta</label><select id="cover-kind" class="form-select" formControlName="image">@for(item of kinds;track item.id){<option [value]="item.id">{{item.name}}</option>}</select></div>
+            <fieldset class="col-12"><legend class="h6">Facilidades</legend><div class="tag-list">
+              @for (item of config()?.catalogs?.facilities ?? [];track item.id) {
+                <button type="button" class="btn btn-sm" [class.btn-brand]="facilities().has(item.id)" [class.btn-soft]="!facilities().has(item.id)" [attr.aria-pressed]="facilities().has(item.id)" (click)="toggle(item.id)">{{item.name}}</button>
+              }
+            </div></fieldset>
+            <div class="col-12 d-flex flex-wrap gap-3">
+              <label class="d-flex align-items-center gap-2"><input type="checkbox" class="form-check-input mt-0" formControlName="is_demo" (change)="verification()"> Datos de demostración</label>
+              <label class="d-flex align-items-center gap-2"><input type="checkbox" class="form-check-input mt-0" formControlName="verified"> Ficha verificada en campo</label>
+            </div>
+            @if(formError()){<p class="col-12 text-danger mb-0" role="alert">{{formError()}}</p>}
+            <div class="col-12 d-flex gap-2"><button type="submit" class="btn btn-brand" [disabled]="busy()">Guardar ficha</button><button type="button" class="btn btn-outline-secondary" [disabled]="busy()" (click)="editing.set(false)">Cancelar</button></div>
+          </form>
+        </section>
+      }
+      <section class="surface p-4">
+        <div class="d-flex justify-content-between align-items-center gap-2 flex-wrap mb-3"><h2 class="h4 mb-0">Directorio</h2><button class="btn btn-brand" type="button" [disabled]="busy()" (click)="edit()">Nuevo lugar</button></div>
+        @for (place of places();track place.id) {
+          <article class="record d-flex flex-wrap justify-content-between align-items-center gap-2">
+            <div><strong>{{place.name}}</strong><p class="muted small mb-0">{{place.category}} · {{place.district}}</p></div>
+            <div class="d-flex flex-wrap align-items-center gap-2">
+              @if (place.archived_at) {<span class="tag tag-warn">Archivado</span><button type="button" class="btn btn-soft btn-sm" [disabled]="busy()" (click)="archive(place.id,true)">Restaurar</button>}
+              @else {
+                <button type="button" class="btn btn-soft btn-sm" [disabled]="busy()" (click)="edit(place)">Editar</button>
+                @if (confirmation()===place.id) {
+                  <button type="button" class="btn btn-outline-danger btn-sm" [disabled]="busy()" (click)="archive(place.id,false)">Confirmar archivo</button>
+                  <button type="button" class="btn btn-outline-secondary btn-sm" (click)="confirmation.set(null)">Cancelar</button>
+                } @else {<button type="button" class="btn btn-outline-secondary btn-sm" [disabled]="busy()" (click)="confirmation.set(place.id)">Archivar</button>}
+              }
+            </div>
+          </article>
+        } @empty {<p class="muted">Aún no hay lugares.</p>}
+      </section>
+    } @else {
+      <section class="surface p-4"><h2 class="h4">Reportes recibidos</h2>
+        @for (report of reports();track report.id) {
+          <article class="record d-flex gap-3 flex-wrap justify-content-between">
+            <div><strong>{{report.title}}</strong><p class="muted small mb-1">{{report.place_name || report.location}} · {{report.author}} · {{date(report.created_at)}}</p><p class="mb-0">{{report.description}}</p></div>
+            <div class="d-flex align-items-center gap-2 flex-wrap"><span class="tag" [class.tag-green]="report.status_id==='resolved'">{{status(report.status_id)}}</span><button type="button" class="btn btn-soft btn-sm" [disabled]="busy()" (click)="update(report)">{{report.status_id==='pending' ? 'Pasar a revisión' : report.status_id==='reviewing' ? 'Marcar resuelto' : 'Reabrir'}}</button></div>
+          </article>
+        } @empty {<p class="muted mb-0">Aún no hay reportes.</p>}
+      </section>
+    }
+  }
+</div>
