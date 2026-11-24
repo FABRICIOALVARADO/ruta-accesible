@@ -5,8 +5,10 @@ const credentials = {name:'Vecina del mapa',email:'mapa@example.test',password:'
 const origin = {lat:-12.0683,lng:-75.2103}, destination = {lat:-12.0717,lng:-75.2095};
 
 test.beforeEach(async ({page})=>{
-  // La prueba necesita el mapa y su capa de datos, no el servicio externo de teselas.
   await page.route('https://tile.openstreetmap.org/**', route=>route.abort());
+  await page.route('https://maps.google.com/**', route=>route.fulfill({
+    contentType:'text/html', body:'<p>Vista de calles de Google Maps</p>',
+  }));
 });
 
 async function demo(page) {
@@ -24,7 +26,7 @@ test('un reporte geolocalizado cambia la alternativa y las preferencias se conse
   const initial=(await before.json()).alternative.segments[0];
 
   const beforeSteps=await demo(page);
-  await expect(page.getByRole('region',{name:'Mapa interactivo de Huancayo'})).toHaveClass(/leaflet-container/);
+  await expect(page.getByRole('region',{name:'Mapa interactivo de Huancayo'}).locator('.leaflet-container')).toBeVisible();
   await expect(beforeSteps.getByRole('button',{name:new RegExp(initial.name)})).toBeVisible();
   await beforeSteps.getByRole('button',{name:new RegExp(initial.name)}).click();
   await expect(page.getByRole('region',{name:'Detalle del tramo'}).getByText(/Pendiente/)).toBeVisible();
@@ -81,4 +83,23 @@ test('el mapa y la comparación caben en una pantalla móvil',async({page})=>{
   await demo(page);
   await expect(page.getByRole('heading',{name:'Planifica tu recorrido'})).toBeVisible();
   expect(await page.evaluate(()=>document.documentElement.scrollWidth)).toBeLessThanOrEqual(390);
+});
+
+test('Google Maps aparece sin clave y el planificador conserva el recorrido al alternar',async({page})=>{
+  await page.goto('/mapa');
+  const view=page.getByRole('group',{name:'Vista del mapa'});
+  const frame=page.locator('iframe[title="Google Maps de Huancayo"]');
+  await expect(view.getByRole('button',{name:'Google Maps'})).toHaveAttribute('aria-pressed','true');
+  await expect(frame).toHaveAttribute('src',/maps\.google\.com\/maps\?q=Plaza.*Huancayo.*output=embed/);
+  await expect(frame.contentFrame().getByText('Vista de calles de Google Maps')).toBeVisible();
+  await page.getByRole('button',{name:/Probar Plaza Constitución/}).click();
+  await expect(page.getByRole('region',{name:'Pasos del recorrido'})).toBeVisible();
+  await expect(view.getByRole('button',{name:'Rutas y barreras'})).toHaveAttribute('aria-pressed','true');
+  const directions=page.getByRole('link',{name:/Abrir indicaciones peatonales/});
+  await expect(directions).toHaveAttribute('href',/www\.google\.com\/maps\/dir\/\?.*travelmode=walking/);
+  await view.getByRole('button',{name:'Google Maps'}).click();
+  await expect(frame).toBeVisible();
+  await page.getByRole('button',{name:'Marcar destino'}).click();
+  await expect(page.getByText('Toca el mapa para marcar el destino.')).toBeVisible();
+  await expect(page.getByRole('region',{name:'Pasos del recorrido'})).toBeVisible();
 });

@@ -8,13 +8,14 @@ import {
   MobilityApi, type Barrier, type Candidate, type Comparison, type Network, type Profile, type Street,
   crossingLabels, qualityLabels, surfaceLabels, defaultProfile,
 } from '../core/mobility';
-import type { Place, Point } from '../core/models';
+import type { Config, Place, Point } from '../core/models';
 import { Notice, Session } from '../core/session';
 import { LiveMap } from '../shared/live-map';
 import { ProfileFields } from '../shared/profile-fields';
 
 type Choice = 'alternative'|'direct';
 type Picking = 'origin'|'destination'|'report'|null;
+type MapView = 'streets'|'routes';
 
 @Component({
   imports:[ReactiveFormsModule,RouterLink,LiveMap,ProfileFields],
@@ -39,6 +40,9 @@ export class NavigatorPage {
   readonly destination=signal<Point|null>(null);
   readonly report=signal<Point|null>(null);
   readonly picking=signal<Picking>(null);
+  readonly mapConfig=signal<Config|null>(null);
+  private readonly requestedView=signal<MapView|null>(null);
+  readonly mapView=computed(()=>this.requestedView() ?? (this.mapConfig()?.maps_key ? 'routes' : 'streets'));
   readonly focused=signal<Street|null>(null);
   readonly barrier=signal<Barrier|null>(null);
   readonly loading=signal(true);
@@ -66,12 +70,13 @@ export class NavigatorPage {
     const destination=this.query.snapshot.queryParamMap.get('destino') ?? '';
     const verified=this.query.snapshot.queryParamMap.get('verificada')==='1';
     this.useDemo=this.query.snapshot.queryParamMap.get('demo')==='1';
-    if(this.query.snapshot.queryParamMap.get('marcar')==='barrera')this.picking.set('report');
+    if(this.query.snapshot.queryParamMap.get('marcar')==='barrera')this.startPicking('report');
     this.form.reset({origin,destination});
     this.form.valueChanges.pipe(takeUntilDestroyed(inject(DestroyRef))).subscribe(()=>{
       this.useDemo=false;
       this.invalidate();
     });
+    void this.api.config().then(config=>this.mapConfig.set(config)).catch(()=>{});
     Promise.all([this.mobility.network(),this.api.places(),this.session.ready()]).then(async ([graph,places])=>{
       this.network.set(graph);
       this.places.set(places);
@@ -125,6 +130,16 @@ export class NavigatorPage {
     );
   }
 
+  switchMap(view:MapView) {
+    this.requestedView.set(view);
+    if(view==='streets') this.picking.set(null);
+  }
+
+  startPicking(action:Exclude<Picking,null>) {
+    this.switchMap('routes');
+    this.picking.set(this.picking()===action ? null : action);
+  }
+
   selectOnMap(point:Point) {
     const action=this.picking();
     if(!action) return;
@@ -133,8 +148,8 @@ export class NavigatorPage {
     this.picking.set(null);
   }
 
-  showStreet(street:Street) { this.focused.set(street); this.barrier.set(null); }
-  showBarrier(barrier:Barrier) { this.barrier.set(barrier); this.focused.set(null); }
+  showStreet(street:Street) { this.switchMap('routes'); this.focused.set(street); this.barrier.set(null); }
+  showBarrier(barrier:Barrier) { this.switchMap('routes'); this.barrier.set(barrier); this.focused.set(null); }
 
   submitReport() {
     const point=this.report();
@@ -154,6 +169,7 @@ export class NavigatorPage {
     this.error.set('');
     const a=this.origin(), b=this.destination();
     if(!a || !b) { this.error.set('Elige dos lugares del directorio o marca los puntos en el mapa.'); return; }
+    this.switchMap('routes');
     const revision=++this.generation;
     this.busy.set(true);
     this.focused.set(null);
@@ -168,7 +184,7 @@ export class NavigatorPage {
     } finally { if(revision===this.generation) this.busy.set(false); }
   }
 
-  choose(choice:Choice) { this.choice.set(choice); this.focused.set(null); this.barrier.set(null); }
+  choose(choice:Choice) { this.switchMap('routes'); this.choice.set(choice); this.focused.set(null); this.barrier.set(null); }
 
   async save(){
     if(!this.active() || !this.session.requireLogin())return;

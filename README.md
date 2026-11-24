@@ -22,14 +22,14 @@ Copia `.env.example` a `.env` en la raíz. Reinicia después de ajustar las vari
 | --- | --- |
 | `PORT` | Puerto local. Por defecto, 3001. |
 | `ADMIN_EMAIL`, `ADMIN_PASSWORD` | Crean la cuenta administradora inicial. Usa un correo que todavía no esté registrado y una contraseña de al menos 12 caracteres. |
-| `GOOGLE_MAPS_API_KEY` | Habilita el mapa de calles y el cálculo de rutas desde la web. Activa **Maps JavaScript API** y **Routes API** y restringe la clave al origen local en Google Cloud. |
+| `GOOGLE_MAPS_API_KEY` | Activa el fondo de Google Maps para la capa de rutas y barreras. Habilita **Maps JavaScript API** y limita la clave a los sitios autorizados, por ejemplo `http://127.0.0.1:3001/*`. Para el cálculo de indicaciones externas dentro del planificador clásico, habilita también **Routes API**. |
 | `GOOGLE_MAPS_MAP_ID` | Identificador de mapa de Google. El valor de prueba es `DEMO_MAP_ID`. |
 
-El mapa principal usa Leaflet y calles de OpenStreetMap con su atribución. Con conexión a Internet se carga el fondo de calles. El cálculo en la red propia funciona desde SQLite, incluso si ese fondo falla. La vista de indicaciones de Google Maps se puede abrir desde el mapa y el planificador activa su integración interna si hay una clave configurada.
+En **Mapa → Google Maps** puedes explorar las calles del centro de Huancayo sin configurar una clave. Con una clave de Maps JavaScript activa, **Rutas y barreras** dibuja los tramos y avisos directamente sobre Google Maps. Si la clave está vacía o el servicio falla, esa vista usa Leaflet y OpenStreetMap. Los recorridos y avisos se calculan con la red y los reportes de SQLite. [Configurar la API de Google Maps](https://developers.google.com/maps/documentation/javascript/get-api-key?hl=es).
 
 ## Usar el mapa
 
-En **Mapa**, selecciona un origen y destino del directorio o márcalos sobre el mapa. La primera opción prioriza las preferencias de movilidad y la segunda muestra el camino más corto dentro de la red registrada. Los botones de **Cuadra por cuadra** muestran accesos, medidas y avisos.
+En **Mapa**, selecciona un origen y destino del directorio o márcalos sobre el mapa. Pulsa **Comparar recorridos** para centrar **Rutas y barreras** en el resultado. La primera opción prioriza las preferencias de movilidad y la segunda muestra el camino más corto dentro de la red registrada. Los botones de **Cuadra por cuadra** muestran accesos, medidas y avisos.
 
 **Probar Plaza Constitución → Huamanmarca** carga una red de demostración. Sus condiciones son simuladas. Los recorridos reales cubren solo los tramos incorporados y revisados en campo. El estado de cada tramo indica cuánto se conoce de él. El mapa informa cuando un punto queda fuera de cobertura.
 
