@@ -91,20 +91,3 @@ test('el menú móvil permite abrir y filtrar el directorio', async ({ page }) =
   await expect(page.getByRole('heading',{name:'Parque de los Sombreros'})).toBeVisible();
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(390);
 });
-
-test('la portada conserva el contenido con movimiento reducido y con texto ampliado', async ({ page }) => {
-  await page.setViewportSize({width:390,height:844});
-  await page.emulateMedia({reducedMotion:'no-preference'});
-  await page.goto('/');
-  const title = page.getByRole('heading',{name:/a tu ritmo/});
-  const line = title.locator('.title-line > span').first();
-  await expect(line).toHaveCSS('animation-name','headline-in');
-  await page.emulateMedia({reducedMotion:'reduce'});
-  await expect(line).toHaveCSS('animation-name','none');
-  await expect(title).toBeVisible();
-  await page.emulateMedia({reducedMotion:'no-preference'});
-  await page.getByRole('button',{name:'Texto ampliado y contraste alto'}).click();
-  await expect(line).toHaveCSS('animation-name','none');
-  await expect(page.getByRole('link',{name:/Abrir mapa y rutas/})).toBeVisible();
-  expect(await page.evaluate(()=>document.documentElement.scrollWidth)).toBeLessThanOrEqual(390);
-});

@@ -67,7 +67,7 @@ export class Maps {
         const points = route?.points ?? places;
         const toPoint = ({lat,lng}: Point) => ({lat,lng});
         if (route?.real && points.length) {
-          line = new mapApi.Polyline({map,path:points,strokeColor:'#9d0208',strokeWeight:5,strokeOpacity:.9});
+          line = new mapApi.Polyline({map,path:points,strokeColor:'#5734a9',strokeWeight:5,strokeOpacity:.9});
         }
         pins = route?.real ? [points[0], points[points.length-1]].filter(p=>p !== undefined)
           .map(position => new markers.AdvancedMarkerElement({map,position})) : places.map(place => {

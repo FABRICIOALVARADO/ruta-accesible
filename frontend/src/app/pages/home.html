@@ -1,36 +1,25 @@
-<div class="container-xl page home-page">
+<div class="container-xl page">
   <section class="hero">
+    <img class="hero-photo" src="https://upload.wikimedia.org/wikipedia/commons/1/10/Huancayo_Peru.jpg" alt="" fetchpriority="high" [hidden]="photoError()" (error)="photoError.set(true)">
     <div class="hero-copy">
-      <div class="kicker">VALLE DEL MANTARO · HUANCAYO</div>
-      <h1><span class="title-line"><span>Huancayo,</span></span> <span class="title-line"><span>a tu ritmo.</span></span></h1>
+      <div class="kicker">⌖ VALLE DEL MANTARO · HUANCAYO</div>
+      <h1>Huancayo,<br><span>a tu ritmo.</span></h1>
       <p>Conoce los accesos de cada lugar y organiza tu recorrido por la ciudad.</p>
       <div class="d-flex flex-wrap gap-2">
-        <a class="btn btn-amber" routerLink="/mapa">Abrir mapa y rutas <span class="action-arrow" aria-hidden="true">→</span></a>
+        <a class="btn btn-lime" routerLink="/mapa">Abrir mapa y rutas →</a>
         <a class="btn btn-glass" routerLink="/explorar">Explorar lugares</a>
       </div>
     </div>
-    <div class="postcard">
-      <figure class="postcard-sheet">
-        <div class="postcard-window">
-          @if (photoError()) {<img class="postcard-fallback" src="icon.svg" alt="" width="56" height="56">}
-          @else {<img class="hero-photo" src="https://upload.wikimedia.org/wikipedia/commons/1/10/Huancayo_Peru.jpg"
-            width="1024" height="621" alt="La catedral junto a la plaza Constitución de Huancayo" fetchpriority="high" (error)="photoError.set(true)">}
-        </div>
-        <figcaption>
-          @if (photoError()) {<span>Huancayo, Junín</span>}
-          @else {<span>Plaza Constitución</span><a href="https://commons.wikimedia.org/wiki/File:Huancayo_Peru.jpg" target="_blank" rel="noopener noreferrer">Foto · edhucesar</a>}
-        </figcaption>
-      </figure>
-    </div>
+    @if (!photoError()) {<a class="credit" href="https://commons.wikimedia.org/wiki/File:Huancayo_Peru.jpg" target="_blank" rel="noopener noreferrer">Foto · edhucesar</a>}
   </section>
-  <section class="home-shortcuts row g-3 mt-2" aria-label="Acciones rápidas">
+  <section class="row g-3 mt-2" aria-label="Acciones rápidas">
     @for (item of shortcuts; track item.path) {
       <div class="col-12 col-md-4">
         <a class="surface shortcut" [routerLink]="item.path"><span aria-hidden="true">{{item.icon}}</span><div><strong>{{item.title}}</strong><small>{{item.text}}</small></div><span aria-hidden="true">↗</span></a>
       </div>
     }
   </section>
-  <section class="home-directory section-space">
+  <section class="section-space">
     <div class="d-flex align-items-end justify-content-between flex-wrap gap-3 mb-3">
       <div><h2>Lugares para explorar</h2><p class="muted mb-0">Revisa las facilidades de cada lugar antes de salir.</p></div>
       <a class="btn btn-soft" routerLink="/explorar">Ver directorio →</a>
