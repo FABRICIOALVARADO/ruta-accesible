@@ -85,7 +85,7 @@
             <div class="map-selection" role="status"><span>Toca el mapa para marcar {{pick==='origin'?'el origen':pick==='destination'?'el destino':'la barrera'}}.</span>
               <button type="button" class="btn btn-sm btn-outline-secondary" (click)="picking.set(null)">Cancelar</button></div>
           }
-          <ra-live-map [network]="network()" [route]="active()" [other]="other()" [origin]="origin()" [destination]="destination()"
+          <ra-live-map [config]="mapConfig()" [network]="network()" [route]="active()" [other]="other()" [origin]="origin()" [destination]="destination()"
             [report]="report()" [picking]="!!picking()" [focus]="focused()"
             (pick)="selectOnMap($event)" (selectStreet)="showStreet($event)" (selectBarrier)="showBarrier($event)" />
           <div class="map-toolbar legend-row" aria-label="Leyenda del mapa"><span><i class="legend-line active-line"></i>Elegido</span><span><i class="legend-line reference-line"></i>Referencia</span><span><i class="legend-dot"></i>Barrera</span></div>

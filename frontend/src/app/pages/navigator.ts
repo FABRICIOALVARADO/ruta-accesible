@@ -8,7 +8,7 @@ import {
   MobilityApi, type Barrier, type Candidate, type Comparison, type Network, type Profile, type Street,
   crossingLabels, qualityLabels, surfaceLabels, defaultProfile,
 } from '../core/mobility';
-import type { Place, Point } from '../core/models';
+import type { Config, Place, Point } from '../core/models';
 import { Notice, Session } from '../core/session';
 import { LiveMap } from '../shared/live-map';
 import { ProfileFields } from '../shared/profile-fields';
@@ -40,7 +40,9 @@ export class NavigatorPage {
   readonly destination=signal<Point|null>(null);
   readonly report=signal<Point|null>(null);
   readonly picking=signal<Picking>(null);
-  readonly mapView=signal<MapView>('streets');
+  readonly mapConfig=signal<Config|null>(null);
+  private readonly requestedView=signal<MapView|null>(null);
+  readonly mapView=computed(()=>this.requestedView() ?? (this.mapConfig()?.maps_key ? 'routes' : 'streets'));
   readonly focused=signal<Street|null>(null);
   readonly barrier=signal<Barrier|null>(null);
   readonly loading=signal(true);
@@ -74,6 +76,7 @@ export class NavigatorPage {
       this.useDemo=false;
       this.invalidate();
     });
+    void this.api.config().then(config=>this.mapConfig.set(config)).catch(()=>{});
     Promise.all([this.mobility.network(),this.api.places(),this.session.ready()]).then(async ([graph,places])=>{
       this.network.set(graph);
       this.places.set(places);
@@ -128,7 +131,7 @@ export class NavigatorPage {
   }
 
   switchMap(view:MapView) {
-    this.mapView.set(view);
+    this.requestedView.set(view);
     if(view==='streets') this.picking.set(null);
   }
 

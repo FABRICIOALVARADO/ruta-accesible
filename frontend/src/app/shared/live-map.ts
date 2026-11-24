@@ -1,112 +1,171 @@
-import { AfterViewInit, Component, ElementRef, OnDestroy, effect, input, output, signal, viewChild } from '@angular/core';
+import { Component, ElementRef, effect, inject, input, output, signal, viewChild } from '@angular/core';
 import * as L from 'leaflet';
-import type { Barrier, Candidate, Coordinate, Network, Street } from '../core/mobility';
-import type { Point } from '../core/models';
+import { huancayoCenter, huancayoZoom, routeZoom, type MapViewport } from '../core/map-viewport';
+import { Maps } from '../core/maps';
+import type { Barrier, Candidate, Network, Street } from '../core/mobility';
+import type { Config, Point } from '../core/models';
 
-const huancayo: Coordinate = [-12.0697,-75.2101];
-const pinKind = {origin:'#3c2d94',destination:'#24614e',report:'#ad3e37'};
+function openLeaflet(host: HTMLElement, pick: (point: Point) => void, tileError: (failed: boolean) => void): MapViewport {
+  const map = L.map(host, {
+    center:huancayoCenter, zoom:huancayoZoom, zoomControl:false, scrollWheelZoom:false,
+  });
+  map.attributionControl.setPrefix(false);
+  L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    maxZoom:19, attribution:'© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+  }).on('tileerror',()=>tileError(true)).on('tileload',()=>tileError(false)).addTo(map);
+  L.control.scale({imperial:false,maxWidth:95}).addTo(map);
+  map.on('click',event=>pick({lat:event.latlng.lat,lng:event.latlng.lng}));
+  const layers = L.layerGroup().addTo(map);
+  const observer = new ResizeObserver(()=>map.invalidateSize({pan:false}));
+  observer.observe(host);
+  return {
+    clear() { layers.clearLayers(); },
+    line({path,color,weight,opacity=1,dashed,select}) {
+      const line = L.polyline(path,{color,weight,opacity,dashArray:dashed ? '5 7' : undefined,interactive:!!select});
+      if (select) line.on('click',select);
+      line.addTo(layers);
+    },
+    dot({point,radius,color,select}) {
+      const dot = L.circleMarker([point.lat,point.lng],{
+        radius,color:'#fff',weight:2,fillColor:color,fillOpacity:1,interactive:!!select,
+      });
+      if (select) dot.on('click',select);
+      dot.addTo(layers);
+    },
+    setPicking(active) { host.style.cursor = active ? 'crosshair' : ''; },
+    fit(path) {
+      if (path.length) map.fitBounds(L.latLngBounds(path),{padding:[36,36],maxZoom:routeZoom,animate:false});
+      else map.setView(huancayoCenter,huancayoZoom,{animate:false});
+    },
+    zoom(delta) { map.setZoom(map.getZoom()+delta,{animate:false}); },
+    close() { observer.disconnect(); map.remove(); },
+  };
+}
 
 @Component({
   selector:'ra-live-map',
   template:`
-    <div class="live-map" [class.is-picking]="picking()">
+    <div class="live-map">
       <div #canvas class="live-map-canvas" role="region" aria-label="Mapa interactivo de Huancayo"></div>
       <div class="map-controls" aria-label="Controles del mapa">
-        <button type="button" aria-label="Acercar mapa" title="Acercar" (click)="zoom(1)">+</button>
-        <button type="button" aria-label="Alejar mapa" title="Alejar" (click)="zoom(-1)">−</button>
-        <button type="button" aria-label="Centrar en el recorrido" title="Reencuadrar" (click)="center()">⌖</button>
+        <button type="button" aria-label="Acercar mapa" title="Acercar" [disabled]="pending()" (click)="zoom(1)">+</button>
+        <button type="button" aria-label="Alejar mapa" title="Alejar" [disabled]="pending()" (click)="zoom(-1)">−</button>
+        <button type="button" aria-label="Centrar en el recorrido" title="Reencuadrar" [disabled]="pending()" (click)="center()">⌖</button>
       </div>
-      @if (tileError()) {<p class="map-offline" role="status">Fondo de calles temporalmente no disponible.</p>}
+      @if (pending()) {<p class="map-offline" role="status">Cargando el mapa de Google…</p>}
+      @else if (tileError()) {<p class="map-offline" role="status">Fondo de calles temporalmente no disponible.</p>}
+      @else if (googleUnavailable()) {<p class="map-offline" role="status">Google Maps no pudo cargar. Vista de calles alternativa activa.</p>}
     </div>
   `,
 })
-export class LiveMap implements AfterViewInit, OnDestroy {
-  readonly mapRoot=viewChild.required<ElementRef<HTMLDivElement>>('canvas');
-  readonly network=input<Network|null>(null);
-  readonly route=input<Candidate|null>(null);
-  readonly other=input<Candidate|null>(null);
-  readonly origin=input<Point|null>(null);
-  readonly destination=input<Point|null>(null);
-  readonly report=input<Point|null>(null);
-  readonly picking=input(false);
-  readonly focus=input<Street|null>(null);
-  readonly pick=output<Point>();
-  readonly selectStreet=output<Street>();
-  readonly selectBarrier=output<Barrier>();
-  readonly tileError=signal(false);
-  private map=signal<L.Map|null>(null);
-  private layer?:L.LayerGroup;
-  private fitted:Candidate|null=null;
-  private observer?:ResizeObserver;
+export class LiveMap {
+  readonly mapRoot = viewChild<ElementRef<HTMLDivElement>>('canvas');
+  readonly config = input<Config|null>(null);
+  readonly network = input<Network|null>(null);
+  readonly route = input<Candidate|null>(null);
+  readonly other = input<Candidate|null>(null);
+  readonly origin = input<Point|null>(null);
+  readonly destination = input<Point|null>(null);
+  readonly report = input<Point|null>(null);
+  readonly picking = input(false);
+  readonly focus = input<Street|null>(null);
+  readonly pick = output<Point>();
+  readonly selectStreet = output<Street>();
+  readonly selectBarrier = output<Barrier>();
+  readonly tileError = signal(false);
+  readonly pending = signal(false);
+  readonly googleUnavailable = signal(false);
+
+  private readonly maps = inject(Maps);
+  private readonly viewport = signal<MapViewport|null>(null);
+  private fitted: Candidate|null = null;
 
   constructor() {
-    effect(() => this.render(this.map(), this.network(), this.route(), this.other(), this.focus(),
-      this.origin(), this.destination(), this.report()));
-  }
+    effect(onCleanup => {
+      const root = this.mapRoot()?.nativeElement;
+      const config = this.config();
+      const rejected = this.maps.rejected();
+      if (!root) return;
 
-  ngAfterViewInit() {
-    const surface=this.mapRoot().nativeElement;
-    const map=L.map(surface,{center:huancayo,zoom:16,zoomControl:false,scrollWheelZoom:false,attributionControl:true,preferCanvas:false});
-    map.attributionControl.setPrefix(false);
-    const layer=L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{
-      maxZoom:19,attribution:'© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+      const host = document.createElement('div');
+      host.className = 'live-map-canvas';
+      root.append(host);
+      this.viewport.set(null);
+      this.fitted = null;
+      this.tileError.set(false);
+      let viewport: MapViewport|null = null;
+      let active = true;
+      const pick = (point: Point) => this.pick.emit(point);
+      const leaflet = () => {
+        if (!active) return;
+        host.replaceChildren();
+        viewport = openLeaflet(host,pick,failed=>this.tileError.set(failed));
+        this.viewport.set(viewport);
+        this.googleUnavailable.set(!!config?.maps_key);
+        this.pending.set(false);
+      };
+      onCleanup(() => {
+        active = false;
+        viewport?.close();
+        host.remove();
+      });
+
+      if (!config?.maps_key || rejected) {
+        leaflet();
+        return;
+      }
+      this.pending.set(true);
+      this.googleUnavailable.set(false);
+      void this.maps.openMobility(host,config,pick).then(native => {
+        if (!active) { native?.close(); return; }
+        if (!native) { leaflet(); return; }
+        viewport = native;
+        this.viewport.set(viewport);
+        this.pending.set(false);
+      }).catch(leaflet);
     });
-    layer.on('tileerror',()=>this.tileError.set(true)).on('tileload',()=>this.tileError.set(false));
-    layer.addTo(map);
-    L.control.scale({imperial:false,maxWidth:95}).addTo(map);
-    map.on('click',event=>this.pick.emit({lat:event.latlng.lat,lng:event.latlng.lng}));
-    this.layer=L.layerGroup().addTo(map);
-    this.observer=new ResizeObserver(()=>map.invalidateSize({pan:false}));
-    this.observer.observe(surface);
-    this.map.set(map);
+    effect(() => {
+      const map = this.viewport();
+      if (map) this.render(map);
+    });
   }
 
-  ngOnDestroy() { this.observer?.disconnect(); this.map()?.remove(); }
+  zoom(direction: number) { this.viewport()?.zoom(direction); }
+  center() { this.viewport()?.fit(this.route()?.geometry ?? []); }
 
-  zoom(direction:number) {
-    const current=this.map();
-    if (current) current.setZoom(current.getZoom()+direction,{animate:false});
-  }
+  private render(map: MapViewport) {
+    const network = this.network(), route = this.route(), other = this.other(), focus = this.focus();
+    const picking = this.picking();
+    const onStreet = (edge: Street) => picking ? undefined : () => this.selectStreet.emit(edge);
+    map.clear();
+    map.setPicking(picking);
 
-  center() {
-    const map=this.map();
-    if (!map) return;
-    const chosen=this.route();
-    if (chosen) map.fitBounds(L.latLngBounds(chosen.geometry),{padding:[30,30],maxZoom:17,animate:false});
-    else map.setView(huancayo,16,{animate:false});
-  }
-
-  private render(map:L.Map|null,network:Network|null,route:Candidate|null,other:Candidate|null,focus:Street|null,
-                 origin:Point|null,destination:Point|null,report:Point|null) {
-    const layer=this.layer;
-    if (!map || !layer) return;
-    layer.clearLayers();
     for (const edge of network?.segments ?? []) {
-      const color=edge.closed ? '#a93730' : edge.quality==='verified' ? '#397664' : '#5c586a';
-      L.polyline([edge.a,edge.b],{color,opacity:.68,weight:3,dashArray:edge.quality==='verified' ? undefined : '4 6'})
-        .on('click',()=>this.selectStreet.emit(edge)).addTo(layer);
+      map.line({
+        path:[edge.a,edge.b], color:edge.closed ? '#a93730' : edge.quality==='verified' ? '#397664' : '#5c586a',
+        weight:3, opacity:.68, dashed:edge.quality!=='verified', select:onStreet(edge),
+      });
     }
-    if (other && other.geometry.length) {
-      L.polyline(other.geometry,{color:'#747387',weight:5,dashArray:'5 8',interactive:false}).addTo(layer);
+    if (other?.geometry.length) {
+      map.line({path:other.geometry,color:'#747387',weight:5,dashed:true});
     }
-    if (route && route.geometry.length) {
-      L.polyline(route.geometry,{color:'#fff',opacity:.98,weight:10,interactive:false}).addTo(layer);
+    if (route?.geometry.length) {
+      map.line({path:route.geometry,color:'#fff',opacity:.98,weight:10});
       for (const edge of route.segments) {
-        L.polyline([edge.a,edge.b],{color:edge.id===focus?.id ? '#291b64' : '#613ad6',weight:edge.id===focus?.id ? 9 : 6})
-          .on('click',()=>this.selectStreet.emit(edge)).addTo(layer);
+        const selected = edge.id===focus?.id;
+        map.line({path:[edge.a,edge.b],color:selected ? '#291b64' : '#613ad6',weight:selected ? 9 : 6,select:onStreet(edge)});
       }
-      if (this.fitted!==route) {
-        map.fitBounds(L.latLngBounds(route.geometry),{padding:[36,36],maxZoom:17,animate:false});
-        this.fitted=route;
-      }
-    } else { this.fitted=null; }
-    for (const hazard of network?.barriers ?? []) {
-      L.circleMarker([hazard.lat,hazard.lng],{radius:8,color:'#fff',weight:2,fillColor:'#b94332',fillOpacity:1})
-        .on('click',()=>this.selectBarrier.emit(hazard)).addTo(layer);
+      if (this.fitted!==route) map.fit(route.geometry);
     }
-    for (const [point,color] of [[origin,pinKind.origin],[destination,pinKind.destination],[report,pinKind.report]] as const) {
-      if (!point) continue;
-      L.circleMarker([point.lat,point.lng],{radius:7,weight:3,color:'#fff',fillColor:color,fillOpacity:1,interactive:false}).addTo(layer);
+    this.fitted = route;
+    for (const hazard of network?.barriers ?? []) {
+      map.dot({point:hazard,color:'#b94332',radius:8,label:hazard.title,
+        select:picking ? undefined : () => this.selectBarrier.emit(hazard)});
+    }
+    for (const [point,color,label] of [
+      [this.origin(),'#3c2d94','Origen'], [this.destination(),'#24614e','Destino'], [this.report(),'#ad3e37','Punto del reporte'],
+    ] as const) {
+      if (point) map.dot({point,color,radius:7,label});
     }
   }
 }

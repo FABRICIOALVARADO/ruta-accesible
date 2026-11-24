@@ -1,27 +1,24 @@
 import { Injectable, signal } from '@angular/core';
+import { huancayoCenter, huancayoZoom, routeZoom, type MapViewport } from './map-viewport';
 import type { Config, Mode, Place, Point } from './models';
 
 export interface RouteResult { points: Point[]; meters: number; minutes: number | null; real: boolean; }
 export interface MapHandle { update(places: Place[], route: RouteResult | null): void; close(): void; }
-interface MapObject { setCenter(point: Point): void; setZoom(zoom:number): void; fitBounds(bounds: Bounds, padding:number): void; }
-interface Bounds { extend(point: Point): void; }
-interface Marker { map: MapObject | null; addEventListener(type: string, callback: () => void): void; }
-interface Line { setMap(value: MapObject | null): void; }
 interface NativeRoutes {
   Route: { computeRoutes(options: object): Promise<{routes?: {
     path: (Point | {lat(): number; lng(): number})[]; durationMillis: number; distanceMeters: number;
   }[]}> };
 }
-interface Google { importLibrary(name: string): Promise<unknown>; }
-type MapWindow = Window & { google?: { maps: Google }; raMapReady?: () => void; gm_authFailure?: () => void; };
+type MapWindow = Window & { google?: typeof google; raMapReady?: () => void; gm_authFailure?: () => void; };
 const center = {lat:-12.067, lng:-75.208};
+const toPoint = ([lat,lng]: readonly [number,number]) => ({lat,lng});
 
 @Injectable({providedIn:'root'})
 export class Maps {
-  private loading?: Promise<Google>;
+  private loading?: Promise<typeof google.maps>;
   readonly rejected = signal(false);
 
-  private load(config: Config): Promise<Google> {
+  private load(config: Config): Promise<typeof google.maps> {
     const target = window as MapWindow;
     this.loading ??= new Promise((resolve, reject) => {
       const script = document.createElement('script');
@@ -46,18 +43,22 @@ export class Maps {
     return this.loading;
   }
 
+  private async mapLibraries(config: Config) {
+    const api = await this.load(config);
+    return Promise.all([
+      api.importLibrary('maps') as Promise<google.maps.MapsLibrary>,
+      api.importLibrary('marker') as Promise<google.maps.MarkerLibrary>,
+      api.importLibrary('core') as Promise<google.maps.CoreLibrary>,
+    ]);
+  }
+
   async open(root: HTMLElement, config: Config, navigate: (id: number) => void): Promise<MapHandle | null> {
     if (!config.maps_key || this.rejected()) return null;
-    const api = await this.load(config);
-    const [mapApi, markers, core] = await Promise.all([
-      api.importLibrary('maps') as Promise<{Map: new (element: HTMLElement, options: object) => MapObject; Polyline: new (options: object)=>Line}>,
-      api.importLibrary('marker') as Promise<{AdvancedMarkerElement: new (options: object) => Marker}>,
-      api.importLibrary('core') as Promise<{LatLngBounds: new () => Bounds}>,
-    ]);
+    const [mapApi, markers, core] = await this.mapLibraries(config);
     if (!root.isConnected || this.rejected()) return null;
     const map = new mapApi.Map(root, {center,zoom:13,mapId:config.map_id,mapTypeControl:false,streetViewControl:false});
-    let pins: Marker[] = [];
-    let line: Line | undefined;
+    let pins: google.maps.marker.AdvancedMarkerElement[] = [];
+    let line: google.maps.Polyline | undefined;
     const clear = () => { for (const pin of pins) pin.map = null; line?.setMap(null); };
     return {
       close: clear,
@@ -82,6 +83,78 @@ export class Maps {
           map.setCenter(points[0] ? toPoint(points[0]) : center);
           map.setZoom(points.length ? 15 : 13);
         }
+      },
+    };
+  }
+
+  async openMobility(root: HTMLElement, config: Config, pick: (point: Point) => void): Promise<MapViewport | null> {
+    if (!config.maps_key || this.rejected()) return null;
+    const [maps, markers, core] = await this.mapLibraries(config);
+    if (!root.isConnected || this.rejected()) return null;
+
+    const map = new maps.Map(root, {
+      center: toPoint(huancayoCenter), zoom: huancayoZoom, mapId: config.map_id, disableDefaultUI: true,
+      clickableIcons: false, gestureHandling: 'cooperative',
+    });
+    const layers: (() => void)[] = [];
+    let fitted: google.maps.MapsEventListener | undefined;
+    const click = map.addListener('click', (event: google.maps.MapMouseEvent) => {
+      if (event.latLng) pick(event.latLng.toJSON());
+    });
+    const clear = () => {
+      for (const remove of layers.splice(0)) remove();
+    };
+
+    return {
+      clear,
+      line({path,color,weight,opacity=1,dashed,select}) {
+        const edge = new maps.Polyline({
+          path: path.map(toPoint), map, strokeColor: color, strokeWeight: weight,
+          strokeOpacity: dashed ? 0 : opacity, clickable: !!select,
+          icons: dashed ? [{
+            icon: {path:'M 0,-1 0,1',strokeColor:color,strokeOpacity:opacity,strokeWeight:weight,scale:2},
+            repeat:'12px',
+          }] : undefined,
+        });
+        const listener = select ? edge.addListener('click', select) : undefined;
+        layers.push(() => { listener?.remove(); edge.setMap(null); });
+      },
+      dot({point,label,color,radius,select}) {
+        const symbol = document.createElement('span');
+        symbol.className = 'map-network-dot';
+        symbol.style.backgroundColor = color;
+        symbol.style.width = symbol.style.height = (radius * 2) + 'px';
+        const marker = new markers.AdvancedMarkerElement({
+          map, position:point, title:label, gmpClickable:!!select, anchorTop:'-50%', anchorLeft:'-50%',
+        });
+        marker.append(symbol);
+        if (select) marker.addEventListener('gmp-click', select);
+        layers.push(() => {
+          if (select) marker.removeEventListener('gmp-click', select);
+          marker.map = null;
+        });
+      },
+      setPicking(active) { map.setOptions({draggableCursor:active ? 'crosshair' : 'grab'}); },
+      fit(path) {
+        fitted?.remove();
+        if (!path.length) {
+          map.setCenter(toPoint(huancayoCenter));
+          map.setZoom(huancayoZoom);
+          return;
+        }
+        const bounds = new core.LatLngBounds();
+        path.forEach(point => bounds.extend(toPoint(point)));
+        fitted = core.event.addListenerOnce(map,'idle',() => {
+          if ((map.getZoom() ?? 0) > routeZoom) map.setZoom(routeZoom);
+        });
+        map.fitBounds(bounds, 36);
+      },
+      zoom(delta) { map.setZoom((map.getZoom() ?? huancayoZoom) + delta); },
+      close() {
+        clear();
+        click.remove();
+        fitted?.remove();
+        core.event.clearInstanceListeners(map);
       },
     };
   }
