@@ -62,7 +62,7 @@ test('Google Maps dibuja la ruta registrada y la alternativa se conserva al fall
   const steps=page.getByRole('region',{name:'Pasos del recorrido'});
   await expect(steps).toBeVisible();
   await expect.poll(()=>page.evaluate(()=>Array.from(window.mapTest.lines)
-    .filter(line=>line.strokeColor==='#613ad6' && line.path.length===2).length)).toBeGreaterThan(0);
+    .filter(line=>line.strokeWeight===6 && line.clickable && line.path.length===2).length)).toBeGreaterThan(0);
   expect(await page.evaluate(()=>window.mapTest.fitted.length)).toBeGreaterThan(1);
   expect(await page.evaluate(()=>Array.from(window.mapTest.dots,dot=>dot.title))).toEqual(
     expect.arrayContaining(['Origen','Destino']));

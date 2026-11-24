@@ -9,8 +9,8 @@
         <a class="btn btn-glass" routerLink="/explorar">Explorar lugares</a>
       </div>
     </div>
-    <figure class="postcard">
-      <div class="postcard-sheet">
+    <div class="postcard">
+      <figure class="postcard-sheet">
         <div class="postcard-window">
           @if (photoError()) {<img class="postcard-fallback" src="icon.svg" alt="" width="56" height="56">}
           @else {<img class="hero-photo" src="https://upload.wikimedia.org/wikipedia/commons/1/10/Huancayo_Peru.jpg"
@@ -20,17 +20,17 @@
           @if (photoError()) {<span>Huancayo, Junín</span>}
           @else {<span>Plaza Constitución</span><a href="https://commons.wikimedia.org/wiki/File:Huancayo_Peru.jpg" target="_blank" rel="noopener noreferrer">Foto · edhucesar</a>}
         </figcaption>
-      </div>
-    </figure>
+      </figure>
+    </div>
   </section>
-  <section class="row g-3 mt-2" aria-label="Acciones rápidas">
+  <section class="home-shortcuts row g-3 mt-2" aria-label="Acciones rápidas">
     @for (item of shortcuts; track item.path) {
       <div class="col-12 col-md-4">
         <a class="surface shortcut" [routerLink]="item.path"><span aria-hidden="true">{{item.icon}}</span><div><strong>{{item.title}}</strong><small>{{item.text}}</small></div><span aria-hidden="true">↗</span></a>
       </div>
     }
   </section>
-  <section class="section-space">
+  <section class="home-directory section-space">
     <div class="d-flex align-items-end justify-content-between flex-wrap gap-3 mb-3">
       <div><h2>Lugares para explorar</h2><p class="muted mb-0">Revisa las facilidades de cada lugar antes de salir.</p></div>
       <a class="btn btn-soft" routerLink="/explorar">Ver directorio →</a>

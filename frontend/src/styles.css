@@ -65,7 +65,7 @@ h1,h2,h3,.brand { font-weight:800; letter-spacing:-.045em; }
 .postcard::before,.postcard::after {content:""; position:absolute; inset:0; z-index:-1; border-radius:.36rem;}
 .postcard::before {background:var(--red-ochre); transform:rotate(-8deg) translate(-2%,2%);}
 .postcard::after {background:var(--deep-saffron); transform:rotate(5deg) translate(2%,1%);}
-.postcard-sheet {position:relative; transform:rotate(-2deg); border-radius:.32rem; padding:.48rem; background:#fff6df; color:var(--ink-black); box-shadow:0 10px 25px #03071e45;}
+.postcard-sheet {position:relative; margin:0; transform:rotate(-2deg); border-radius:.32rem; padding:.48rem; background:#fff6df; color:var(--ink-black); box-shadow:0 10px 25px #03071e45;}
 .postcard-window {position:relative; overflow:hidden; aspect-ratio:1.5; border-radius:.12rem; display:grid; place-items:center; background-color:var(--night-bordeaux); background-image:repeating-radial-gradient(ellipse at 18% 106%,transparent 0 17px,#ffba0855 18px 19px,transparent 20px 31px);}
 .postcard-window .hero-photo {position:absolute; inset:0; width:100%; height:100%; object-fit:cover; object-position:50% 54%;}
 .postcard-fallback {width:3.5rem; height:3.5rem;}
@@ -140,4 +140,54 @@ h1,h2,h3,.brand { font-weight:800; letter-spacing:-.045em; }
   .page { padding-block:1.2rem 2.7rem; }
   .hero { border-radius:1rem; }
   .map-house { min-height:285px; }
+}
+
+@keyframes headline-in {
+  from { transform:translateY(112%) rotate(2deg); }
+  to { transform:translateY(0) rotate(0); }
+}
+@keyframes sheet-in {
+  from { opacity:.25; transform:translate(7%,7%) rotate(5deg); }
+  to { opacity:1; transform:translate(0,0) rotate(-2deg); }
+}
+@keyframes fan-left {
+  from { transform:rotate(-2deg); }
+  to { transform:rotate(-8deg) translate(-2%,2%); }
+}
+@keyframes fan-right {
+  from { transform:rotate(-2deg); }
+  to { transform:rotate(5deg) translate(2%,1%); }
+}
+@keyframes enter-view {
+  from { transform:translateY(.9rem); opacity:.72; }
+  to { transform:translateY(0); opacity:1; }
+}
+@media (prefers-reduced-motion:no-preference) {
+  html:not(.reading) .title-line > span { animation:headline-in .6s var(--ease-out) backwards; }
+  html:not(.reading) .title-line:last-child > span { animation-delay:90ms; }
+  html:not(.reading) .postcard-sheet { animation:sheet-in .78s var(--ease-out) backwards; }
+  html:not(.reading) .postcard::before { animation:fan-left .9s var(--ease-out) backwards; }
+  html:not(.reading) .postcard::after { animation:fan-right .82s var(--ease-out) backwards; }
+  html:not(.reading) :is(.page-title,.map-header) { animation:enter-view .32s var(--ease-out); }
+  html:not(.reading) .nav-shell nav a::after { transition:transform .22s var(--ease-out); }
+  html:not(.reading) .action-arrow,html:not(.reading) .shortcut span:last-child { display:inline-block; transition:transform .23s var(--ease-out); }
+  @supports (animation-timeline:view()) {
+    html:not(.reading) :is(.home-shortcuts,.home-directory .row) > div:not(:focus-within) {
+      animation:enter-view linear both; animation-timeline:view(); animation-range:entry 0% entry 65%;
+    }
+  }
+  @media (hover:hover) and (pointer:fine) {
+    html:not(.reading) .shortcut,html:not(.reading) .place-card { transition:transform .22s var(--ease-out),border-color .22s; }
+    html:not(.reading) .shortcut:hover,html:not(.reading) .place-card:hover { transform:translateY(-3px); }
+    html:not(.reading) .shortcut:hover span:last-child { transform:translate(2px,-2px); }
+    html:not(.reading) .btn:hover .action-arrow { transform:translateX(3px); }
+    html:not(.reading) .cover img { transition:transform .42s var(--ease-out); }
+    html:not(.reading) .place-card:hover .cover img { transform:scale(1.04); }
+  }
+  @media (max-width:991px) {
+    html:not(.reading) .nav-shell nav.open { animation:enter-view .22s var(--ease-out); }
+  }
+}
+@media (prefers-reduced-motion:reduce) {
+  .site-header *, .page .btn, .page .form-control, .page .form-select, .page .route-option { transition:none!important; }
 }

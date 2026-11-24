@@ -142,28 +142,28 @@ export class LiveMap {
 
     for (const edge of network?.segments ?? []) {
       map.line({
-        path:[edge.a,edge.b], color:edge.closed ? '#a93730' : edge.quality==='verified' ? '#397664' : '#5c586a',
+        path:[edge.a,edge.b], color:edge.closed ? '#d00000' : edge.quality==='verified' ? '#635347' : '#796f66',
         weight:3, opacity:.68, dashed:edge.quality!=='verified', select:onStreet(edge),
       });
     }
     if (other?.geometry.length) {
-      map.line({path:other.geometry,color:'#747387',weight:5,dashed:true});
+      map.line({path:other.geometry,color:'#685b54',weight:5,dashed:true});
     }
     if (route?.geometry.length) {
       map.line({path:route.geometry,color:'#fff',opacity:.98,weight:10});
       for (const edge of route.segments) {
         const selected = edge.id===focus?.id;
-        map.line({path:[edge.a,edge.b],color:selected ? '#291b64' : '#613ad6',weight:selected ? 9 : 6,select:onStreet(edge)});
+        map.line({path:[edge.a,edge.b],color:selected ? '#370617' : '#9d0208',weight:selected ? 9 : 6,select:onStreet(edge)});
       }
       if (this.fitted!==route) map.fit(route.geometry);
     }
     this.fitted = route;
     for (const hazard of network?.barriers ?? []) {
-      map.dot({point:hazard,color:'#b94332',radius:8,label:hazard.title,
+      map.dot({point:hazard,color:'#d00000',radius:8,label:hazard.title,
         select:picking ? undefined : () => this.selectBarrier.emit(hazard)});
     }
     for (const [point,color,label] of [
-      [this.origin(),'#3c2d94','Origen'], [this.destination(),'#24614e','Destino'], [this.report(),'#ad3e37','Punto del reporte'],
+      [this.origin(),'#03071e','Origen'], [this.destination(),'#9d0208','Destino'], [this.report(),'#dc2f02','Punto del reporte'],
     ] as const) {
       if (point) map.dot({point,color,radius:7,label});
     }
