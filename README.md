@@ -1,61 +1,45 @@
 # Ruta Accesible
 
-Mapa y directorio de Huancayo, El Tambo y Chilca. Permite comparar recorridos según las barreras registradas, consultar las condiciones de cada cuadra y reportar obstáculos con su ubicación.
+¿Cómo llegar de la plaza Constitución a Huamanmarca si necesitas evitar los escalones? Ruta Accesible permite comparar el camino más corto con otro que toma en cuenta el ancho de las veredas, la pendiente y las barreras registradas. El directorio reúne lugares de Huancayo, El Tambo y Chilca.
 
-## Empezar en Windows
+## Abrir el proyecto en Windows
 
-Requisitos para compilar desde el código fuente: **Python 3.13** y **Node.js 24.15 o posterior de la serie 24**, o una versión compatible con Angular 22. Abre la carpeta del proyecto y ejecuta `iniciar.cmd`. También puedes abrir PowerShell en esa carpeta y usar:
+Con **Python 3.13 x64**, descarga el paquete **Ruta-Accesible-Windows** de una [compilación de la rama principal](https://github.com/FABRICIOALVARADO/ruta-accesible/actions/workflows/verificar.yml?query=branch%3Amain). Extrae el ZIP y haz doble clic en `iniciar.cmd`. Deja abierta la terminal mientras uses la página. [Abrir el mapa local](http://127.0.0.1:3001/mapa).
+
+Si descargaste el código fuente, instala también **Node.js 24.15 o posterior de la serie 24**. Desde la carpeta donde está este README, ejecuta lo siguiente en PowerShell.
 
 ```powershell
-npm start
+.\iniciar.cmd
 ```
 
-El script prepara `.venv`, compila Angular cuando falta el resultado y abre [http://127.0.0.1:3001](http://127.0.0.1:3001). Mantén la terminal abierta para usar la web. La primera instalación desde el código fuente requiere conexión a los registros de dependencias.
+El primer arranque desde el código fuente descarga las dependencias y compila Angular. En el paquete de Windows, la interfaz ya viene compilada. También puedes arrancar el proyecto con `npm start`.
 
-El paquete **Ruta-Accesible-Windows** de GitHub Actions trae Angular compilado y las dependencias de Python para Windows x64. Con Python 3.13 x64, basta extraer el ZIP y abrir `iniciar.cmd`.
+## Un recorrido por el centro
 
-### Configuración
+En **Mapa**, pulsa **Probar Plaza Constitución → Huamanmarca**. Cambia entre **Menos barreras registradas** y **Más corto en la red**. En **Cuadra por cuadra**, selecciona un tramo para ver los escalones, el ancho y la pendiente.
 
-Copia `.env.example` a `.env` en la raíz. Reinicia después de ajustar las variables que necesites.
+El ejemplo usa mediciones simuladas. Las fichas distinguen los tramos de demostración de los revisados en campo. Para comunicar un obstáculo, pulsa **Marcar barrera**, señala el punto y completa el reporte. Un administrador puede revisarlo y cerrar ese tramo hasta que vuelva a estar disponible.
+
+## Google Maps y configuración local
+
+La pestaña **Google Maps** abre el centro de Huancayo con conexión a internet. **Rutas y barreras** muestra el trazado calculado por el proyecto. Para dibujarlo sobre las calles de Google, copia `.env.example` a `.env`, configura tu clave y reinicia la aplicación. Con la configuración inicial, esa capa usa OpenStreetMap. [Configuración de Maps JavaScript](https://developers.google.com/maps/documentation/javascript/get-api-key?hl=es).
 
 | Variable | Uso |
 | --- | --- |
-| `PORT` | Puerto local. Por defecto, 3001. |
-| `ADMIN_EMAIL`, `ADMIN_PASSWORD` | Crean la cuenta administradora inicial. Usa un correo que todavía no esté registrado y una contraseña de al menos 12 caracteres. |
-| `GOOGLE_MAPS_API_KEY` | Activa el fondo de Google Maps para la capa de rutas y barreras. Habilita **Maps JavaScript API** y limita la clave a los sitios autorizados, por ejemplo `http://127.0.0.1:3001/*`. Para el cálculo de indicaciones externas dentro del planificador clásico, habilita también **Routes API**. |
-| `GOOGLE_MAPS_MAP_ID` | Identificador de mapa de Google. El valor de prueba es `DEMO_MAP_ID`. |
+| `GOOGLE_MAPS_API_KEY` | Clave de Maps JavaScript para el navegador. Restringe los sitios permitidos al origen que uses, como `http://127.0.0.1:3001/*`. El planificador de indicaciones de Google también usa Routes API. |
+| `GOOGLE_MAPS_MAP_ID` | Identificador de mapa. Para pruebas se incluye `DEMO_MAP_ID`. |
+| `PORT` | Puerto de la web. Por defecto se usa el 3001. |
+| `ADMIN_EMAIL`, `ADMIN_PASSWORD` | Cuenta inicial de administración. Usa un correo sin registrar y una contraseña de al menos 12 caracteres. |
 
-En **Mapa → Google Maps** puedes explorar las calles del centro de Huancayo sin configurar una clave. Con una clave de Maps JavaScript activa, **Rutas y barreras** dibuja los tramos y avisos directamente sobre Google Maps. Si la clave está vacía o el servicio falla, esa vista usa Leaflet y OpenStreetMap. Los recorridos y avisos se calculan con la red y los reportes de SQLite. [Configurar la API de Google Maps](https://developers.google.com/maps/documentation/javascript/get-api-key?hl=es).
+## Código y datos
 
-## Usar el mapa
-
-En **Mapa**, selecciona un origen y destino del directorio o márcalos sobre el mapa. Pulsa **Comparar recorridos** para centrar **Rutas y barreras** en el resultado. La primera opción prioriza las preferencias de movilidad y la segunda muestra el camino más corto dentro de la red registrada. Los botones de **Cuadra por cuadra** muestran accesos, medidas y avisos.
-
-**Probar Plaza Constitución → Huamanmarca** carga una red de demostración. Sus condiciones son simuladas. Los recorridos reales cubren solo los tramos incorporados y revisados en campo. El estado de cada tramo indica cuánto se conoce de él. El mapa informa cuando un punto queda fuera de cobertura.
-
-Un reporte marcado en el mapa aparece en **Administración → Verificación de campo**. Desde ahí se puede publicar una advertencia o cerrar el tramo asociado. El cierre se aplica al cálculo hasta que se retira o se resuelve el reporte. En el mismo panel se pueden registrar puntos, medir tramos y entradas, y publicar recorridos que conecten tramos verificados.
-
-## Estructura
-
-| Carpeta | Contenido |
-| --- | --- |
-| `frontend/src/app/pages/` | Pantallas de inicio, directorio, fichas, recorridos, comunidad, cuenta y administración. |
-| `frontend/src/app/core/` | Cliente HTTP, sesión, tipos y conexión con Google Maps. |
-| `frontend/src/app/shared/` | Tarjetas de lugar y mapa que se usan en varias pantallas. |
-| `backend/ruta_accesible/` | API con FastAPI, validaciones con Pydantic, autenticación y acceso a SQLite. |
-| `backend/tests/`, `frontend/e2e/` | Pruebas de API y recorridos de usuario en Chromium. |
-
-Angular usa TypeScript, plantillas HTML, CSS y Bootstrap. Se compila a JavaScript. FastAPI entrega los archivos compilados y responde a `/api` en el mismo puerto. La documentación de las rutas de la API está en [http://127.0.0.1:3001/docs](http://127.0.0.1:3001/docs).
-
-### Base de datos
-
-`backend/ruta_accesible/schema.sql` define el directorio y la actividad de usuarios. `mobility_schema.sql` agrega puntos, tramos, revisiones de campo, ubicación de reportes y preferencias. Cada tramo conecta dos puntos. Sus mediciones se guardan por revisión, y el cálculo usa la última. Las barreras activas se obtienen del último movimiento de cada reporte en `report_events`.
-
-FastAPI calcula ambos recorridos con Dijkstra. Para la alternativa descarta cierres y condiciones incompatibles con los filtros, y penaliza los avisos activos y la información incompleta. El resultado diferencia tramos verificados, sin revisar y de demostración. El cálculo usa la longitud de los segmentos registrados y avisa si el origen o destino quedan separados de la red.
-
-El archivo `data/ruta-accesible-fastapi.db` se inicializa en el primer arranque. Si existe `data/ruta-accesible.db` de la edición anterior, se importan los registros una vez y se conserva el archivo de origen. La migración mantiene usuarios, lugares, reseñas, favoritos, reportes y recorridos guardados. Las sesiones se vuelven a iniciar en la edición nueva.
+- `frontend/src/app/` contiene las pantallas de Angular en TypeScript. Las plantillas y los estilos usan HTML, CSS y Bootstrap.
+- `backend/ruta_accesible/` contiene la API de FastAPI. El cálculo de recorridos está en `routing.py`. Usa Dijkstra sobre los tramos registrados y aplica las preferencias de movilidad al comparar alternativas. [API local](http://127.0.0.1:3001/docs).
+- `schema.sql` y `mobility_schema.sql`, dentro del backend, definen el directorio, los usuarios, los cruces y las revisiones de los tramos. Los datos se guardan en `data/ruta-accesible-fastapi.db`. En el primer arranque se importan los registros si hay una base anterior en `data/ruta-accesible.db`.
 
 ## Pruebas
+
+Desde la raíz, con el entorno de Python activo, puedes ejecutar las mismas pruebas de API y navegador que utiliza GitHub Actions.
 
 ```powershell
 python -m pip install -r backend/requirements-dev.txt
@@ -66,6 +50,4 @@ npm --prefix frontend exec -- playwright install chromium
 npm --prefix frontend run test:e2e
 ```
 
-La compilación y las pruebas corren en GitHub Actions. El entorno de pruebas usa SQLite con datos separados de la instalación local.
-
-Fotos de Huancayo en Wikimedia Commons: [vista de la ciudad](https://commons.wikimedia.org/wiki/File:Huancayo_Peru.jpg), [plaza Constitución](https://commons.wikimedia.org/wiki/File:Plaza_Constituci%C3%B3n_-_Huancayo.jpg) y [parque de la Identidad Wanka](https://commons.wikimedia.org/wiki/File:Parque_de_la_Identidad_Wanka,_Huancayo,_Per%C3%BA_01.jpg).
+Fotografías en Wikimedia Commons · [Huancayo](https://commons.wikimedia.org/wiki/File:Huancayo_Peru.jpg) · [Plaza Constitución](https://commons.wikimedia.org/wiki/File:Plaza_Constituci%C3%B3n_-_Huancayo.jpg) · [Parque de la Identidad Wanka](https://commons.wikimedia.org/wiki/File:Parque_de_la_Identidad_Wanka,_Huancayo,_Per%C3%BA_01.jpg).
